@@ -23,13 +23,19 @@
  * - 残日数: 最重要な行動決定要因（色分け表示）
  * - 難易度: 申請の難易度（3段階ドット表示）
  * 
+ * 双方向リンク機能（v19.0新機能）:
+ * - コラムから補助金への紐付け: 既存のACF「related_grants」フィールド使用
+ * - 補助金からコラムへの逆参照: この補助金を紐付けているコラムを自動検出
+ * - サイドバーに「詳しい記事」セクション表示
+ * - 記事タイトル、カテゴリ、読了時間を表示
+ * 
  * スティッキーCTA（モバイル）:
  * - 「診断する」（補助金診断ページ）
  * - 「探す」（補助金一覧ページ）
  * - サイト内回遊を最優先、公式サイトへの離脱を防止
  * 
  * @package Grant_Insight_Perfect
- * @version 18.0.0-perfect-conversion-optimized
+ * @version 19.0.0-bidirectional-linking
  */
 
 if (!defined('ABSPATH')) {
@@ -215,6 +221,22 @@ if (!empty($taxonomies['categories'])) {
 }
 
 $related_query = new WP_Query($related_args);
+
+// 関連コラム取得（この補助金を紐付けているコラムを逆参照）
+$related_columns_query = new WP_Query(array(
+    'post_type' => 'column',
+    'posts_per_page' => 6,
+    'post_status' => 'publish',
+    'meta_query' => array(
+        array(
+            'key' => 'related_grants', // ACFのリレーションフィールド
+            'value' => '"' . $post_id . '"', // シリアライズされた配列内を検索
+            'compare' => 'LIKE'
+        )
+    ),
+    'orderby' => 'date',
+    'order' => 'DESC'
+));
 
 // 公開日・更新日
 $published_date = get_the_date('c');
@@ -1257,6 +1279,115 @@ select {
     font-size: 10px;
     color: #666666;
     font-weight: 500;
+}
+
+/* 関連コラム（サイドバー版） */
+.gus-related-columns-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.gus-related-column-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 12px;
+}
+
+.gus-related-column-item:hover {
+    background: #FFFFFF;
+    border-color: #000000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateX(2px);
+}
+
+.gus-related-column-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.gus-related-column-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 6px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.gus-related-column-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: #6B7280;
+}
+
+.gus-related-column-meta .column-category,
+.gus-related-column-meta .column-read-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.gus-related-column-meta i {
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.gus-related-column-arrow {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9CA3AF;
+    transition: all 0.2s ease;
+}
+
+.gus-related-column-item:hover .gus-related-column-arrow {
+    color: #000000;
+    transform: translateX(2px);
+}
+
+.gus-view-all-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #000000;
+    background: #F3F4F6;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.gus-view-all-link:hover {
+    background: #E5E7EB;
+    transform: translateX(2px);
+}
+
+.gus-view-all-link i {
+    font-size: 11px;
+    transition: transform 0.2s ease;
+}
+
+.gus-view-all-link:hover i {
+    transform: translateX(3px);
 }
 
 /* 統計グリッド - スタイリッシュ */
@@ -3477,6 +3608,61 @@ select {
                     </a>
                     <?php endwhile; ?>
                 </div>
+            </div>
+            <?php 
+            wp_reset_postdata();
+            endif; 
+            ?>
+            
+            <!-- 関連コラム（サイドバー版） -->
+            <?php if ($related_columns_query && $related_columns_query->have_posts()): ?>
+            <div class="gus-sidebar-card">
+                <h2 class="gus-sidebar-title">
+                    <span class="gus-icon gus-icon-document"></span>
+                    詳しい記事
+                </h2>
+                <div class="gus-related-columns-list">
+                    <?php 
+                    $column_count = 0;
+                    while ($related_columns_query->have_posts() && $column_count < 3) : 
+                        $related_columns_query->the_post();
+                        $column_count++;
+                        $column_id = get_the_ID();
+                        $read_time = get_field('estimated_read_time', $column_id);
+                        $column_categories = get_the_terms($column_id, 'column_category');
+                    ?>
+                    <a href="<?php the_permalink(); ?>" 
+                       class="gus-related-column-item"
+                       aria-label="<?php echo esc_attr(get_the_title() . 'を読む'); ?>">
+                        <div class="gus-related-column-content">
+                            <div class="gus-related-column-title">
+                                <?php echo wp_trim_words(get_the_title(), 12, '...'); ?>
+                            </div>
+                            <div class="gus-related-column-meta">
+                                <?php if ($column_categories && !is_wp_error($column_categories)): ?>
+                                    <span class="column-category">
+                                        <i class="fas fa-folder" aria-hidden="true"></i>
+                                        <?php echo esc_html($column_categories[0]->name); ?>
+                                    </span>
+                                <?php endif; ?>
+                                <?php if ($read_time): ?>
+                                    <span class="column-read-time">
+                                        <i class="fas fa-clock" aria-hidden="true"></i>
+                                        <?php echo esc_html($read_time); ?>分
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="gus-related-column-arrow">
+                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        </div>
+                    </a>
+                    <?php endwhile; ?>
+                </div>
+                <a href="<?php echo home_url('/columns/'); ?>" class="gus-view-all-link">
+                    すべてのコラムを見る
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
             </div>
             <?php 
             wp_reset_postdata();
