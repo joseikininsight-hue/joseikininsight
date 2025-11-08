@@ -74,6 +74,26 @@ if (!defined('ABSPATH')) {
                                 'archive_column_sidebar_pr' => 'コラムAR:PR',
                                 'archive_column_sidebar_top' => 'コラムAR:SB上',
                                 'archive_column_sidebar_bottom' => 'コラムAR:SB下',
+                                // Taxonomy アーカイブ - カテゴリ
+                                'category_grant_sidebar_top' => 'カテゴリAR:SB上',
+                                'category_grant_sidebar_middle' => 'カテゴリAR:SB中',
+                                'category_grant_sidebar_bottom' => 'カテゴリAR:SB下',
+                                // Taxonomy アーカイブ - 都道府県
+                                'prefecture_grant_sidebar_top' => '都道府県AR:SB上',
+                                'prefecture_grant_sidebar_middle' => '都道府県AR:SB中',
+                                'prefecture_grant_sidebar_bottom' => '都道府県AR:SB下',
+                                // Taxonomy アーカイブ - 市町村
+                                'municipality_grant_sidebar_top' => '市町村AR:SB上',
+                                'municipality_grant_sidebar_middle' => '市町村AR:SB中',
+                                'municipality_grant_sidebar_bottom' => '市町村AR:SB下',
+                                // Taxonomy アーカイブ - 目的
+                                'purpose_grant_sidebar_top' => '目的AR:SB上',
+                                'purpose_grant_sidebar_middle' => '目的AR:SB中',
+                                'purpose_grant_sidebar_bottom' => '目的AR:SB下',
+                                // Taxonomy アーカイブ - タグ
+                                'tag_grant_sidebar_top' => 'タグAR:SB上',
+                                'tag_grant_sidebar_middle' => 'タグAR:SB中',
+                                'tag_grant_sidebar_bottom' => 'タグAR:SB下',
                                 // フロントページ
                                 'front_hero_bottom' => 'TOP:ヒーロー下',
                                 'front_column_zone_top' => 'TOP:コラム上',
@@ -206,6 +226,31 @@ if (!defined('ABSPATH')) {
                                 <option value="archive_grant_content_top">補助金アーカイブ: コンテンツ上部</option>
                                 <option value="archive_grant_content_bottom">補助金アーカイブ: コンテンツ下部</option>
                             </optgroup>
+                            <optgroup label="Taxonomy アーカイブ - カテゴリ">
+                                <option value="category_grant_sidebar_top">カテゴリアーカイブ: サイドバー上部</option>
+                                <option value="category_grant_sidebar_middle">カテゴリアーカイブ: サイドバー中央</option>
+                                <option value="category_grant_sidebar_bottom">カテゴリアーカイブ: サイドバー下部</option>
+                            </optgroup>
+                            <optgroup label="Taxonomy アーカイブ - 都道府県">
+                                <option value="prefecture_grant_sidebar_top">都道府県アーカイブ: サイドバー上部</option>
+                                <option value="prefecture_grant_sidebar_middle">都道府県アーカイブ: サイドバー中央</option>
+                                <option value="prefecture_grant_sidebar_bottom">都道府県アーカイブ: サイドバー下部</option>
+                            </optgroup>
+                            <optgroup label="Taxonomy アーカイブ - 市町村">
+                                <option value="municipality_grant_sidebar_top">市町村アーカイブ: サイドバー上部</option>
+                                <option value="municipality_grant_sidebar_middle">市町村アーカイブ: サイドバー中央</option>
+                                <option value="municipality_grant_sidebar_bottom">市町村アーカイブ: サイドバー下部</option>
+                            </optgroup>
+                            <optgroup label="Taxonomy アーカイブ - 目的">
+                                <option value="purpose_grant_sidebar_top">目的アーカイブ: サイドバー上部</option>
+                                <option value="purpose_grant_sidebar_middle">目的アーカイブ: サイドバー中央</option>
+                                <option value="purpose_grant_sidebar_bottom">目的アーカイブ: サイドバー下部</option>
+                            </optgroup>
+                            <optgroup label="Taxonomy アーカイブ - タグ">
+                                <option value="tag_grant_sidebar_top">タグアーカイブ: サイドバー上部</option>
+                                <option value="tag_grant_sidebar_middle">タグアーカイブ: サイドバー中央</option>
+                                <option value="tag_grant_sidebar_bottom">タグアーカイブ: サイドバー下部</option>
+                            </optgroup>
                             <optgroup label="アーカイブページ - コラム">
                                 <option value="archive_column_sidebar_pr">コラムアーカイブ: PR欄</option>
                                 <option value="archive_column_sidebar_top">コラムアーカイブ: サイドバー上部</option>
@@ -250,6 +295,13 @@ if (!defined('ABSPATH')) {
                                 <option value="archive-grant">補助金アーカイブ</option>
                                 <option value="archive-column">コラムアーカイブ</option>
                                 <option value="archive">その他アーカイブ</option>
+                            </optgroup>
+                            <optgroup label="Taxonomy アーカイブページ">
+                                <option value="taxonomy-grant_category">補助金カテゴリアーカイブ</option>
+                                <option value="taxonomy-grant_prefecture">補助金都道府県アーカイブ</option>
+                                <option value="taxonomy-grant_municipality">補助金市町村アーカイブ</option>
+                                <option value="taxonomy-grant_purpose">補助金目的アーカイブ</option>
+                                <option value="taxonomy-grant_tag">補助金タグアーカイブ</option>
                             </optgroup>
                             <optgroup label="その他">
                                 <option value="front-page">フロントページ</option>

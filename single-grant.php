@@ -1,10 +1,29 @@
 <?php
 /**
- * Grant Single Page - Complete SEO & UX Optimized v16.0 FINAL PERFECT
+ * Grant Single Page - Complete SEO & UX Optimized v17.0 CONVERSION OPTIMIZED
  * 補助金詳細ページ - 完全版（PC常時AIチャット・モバイルボタン式・SEO完璧対応）
  * 
+ * サイドバー順序（UX最適化 v17.0）:
+ * - アクション（AI無料診断→補助金検索→公式サイト→印刷）- コンバージョン優先順
+ * - 目次
+ * - アフィリエイト広告（中央）
+ * - 関連補助金
+ * - AIチャット（サポート機能として下部に配置）
+ * - タグ
+ * 
+ * アクションボタン優先順位（v17.0改善）:
+ * 1. AI無料診断（Primary）- 最優先コンバージョン
+ * 2. 他の補助金を探す（Secondary）- サイト内回遊促進
+ * 3. 公式サイト（Secondary）- 外部リンク
+ * 4. 印刷（Secondary）- ユーティリティ
+ * 
+ * スティッキーCTA（モバイル）:
+ * - 「診断する」（補助金診断ページ）
+ * - 「探す」（補助金一覧ページ）
+ * - サイト内回遊を最優先、公式サイトへの離脱を防止
+ * 
  * @package Grant_Insight_Perfect
- * @version 16.0.0-seo-ai-perfect
+ * @version 17.0.0-ux-conversion-optimized
  */
 
 if (!defined('ABSPATH')) {
@@ -342,7 +361,7 @@ select {
           "@type": "ListItem",
           "position": 2,
           "name": "補助金一覧",
-          "item": "<?php echo esc_js(home_url('/grant/')); ?>"
+          "item": "<?php echo esc_js(home_url('/grants/')); ?>"
         }
         <?php if (!empty($taxonomies['categories'])): ?>
         ,{
@@ -1942,7 +1961,7 @@ select {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%23424242"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>');
 }
 
-/* スティッキーCTA（モバイル用） */
+/* スティッキーCTA（モバイル用 - 2ボタン形式） */
 .gus-sticky-cta {
     position: fixed;
     bottom: 0;
@@ -1954,6 +1973,28 @@ select {
     z-index: 90;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
     display: none;
+}
+
+.gus-sticky-cta-dual {
+    display: none;
+    gap: var(--gus-space-sm);
+}
+
+.gus-sticky-cta-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px var(--gus-space-md);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    min-height: 48px;
+    white-space: nowrap;
+}
+
+.gus-sticky-cta-btn svg {
+    flex-shrink: 0;
 }
 
 /* レスポンシブ */
@@ -2113,9 +2154,19 @@ select {
         display: block;
     }
     
+    .gus-sticky-cta-dual {
+        display: flex;
+    }
+    
     .gus-sticky-cta .gus-btn {
         padding: 10px var(--gus-space-md);
         font-size: 0.875rem;
+        min-height: 44px;
+    }
+    
+    .gus-sticky-cta-btn {
+        font-size: 0.875rem;
+        padding: 10px var(--gus-space-sm);
         min-height: 44px;
     }
     
@@ -2399,6 +2450,349 @@ select {
 .gus-content-wrapper > div[class*="eligible-expenses"],
 .gus-content-wrapper > div[class*="required-documents"] {
     display: none !important;
+}
+
+/* ===============================================
+   PC/MOBILE COMMON CTA SECTION - STRONG CONVERSION
+   =============================================== */
+
+.gus-cta-section {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: #ffffff;
+    padding: 64px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.gus-cta-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+}
+
+.gus-cta-section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+}
+
+.gus-cta-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--gus-space-xl);
+}
+
+.gus-cta-content {
+    text-align: center;
+}
+
+.gus-cta-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 50%;
+    margin-bottom: var(--gus-space-lg);
+    color: #FFD700;
+}
+
+.gus-cta-icon svg {
+    width: 48px;
+    height: 48px;
+}
+
+.gus-cta-title {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: var(--gus-space-lg);
+    color: #ffffff;
+}
+
+.gus-cta-description {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin-bottom: var(--gus-space-2xl);
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.gus-cta-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--gus-space-lg);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.gus-cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gus-space-md);
+    padding: 24px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 90px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gus-cta-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.gus-cta-btn:hover::before {
+    left: 100%;
+}
+
+.gus-cta-btn svg {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+}
+
+.gus-cta-btn span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    text-align: left;
+}
+
+.gus-cta-btn strong {
+    font-size: 1.125rem;
+    font-weight: 700;
+    display: block;
+}
+
+.gus-cta-btn small {
+    font-size: 0.875rem;
+    font-weight: 400;
+    opacity: 0.9;
+    display: block;
+}
+
+/* Primary CTA Button - Black with Yellow Accent */
+.gus-cta-btn-primary {
+    background: #000000;
+    color: #ffffff;
+    border: 2px solid #FFD700;
+}
+
+.gus-cta-btn-primary:hover {
+    background: #FFD700;
+    color: #000000;
+    border-color: #FFD700;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+}
+
+.gus-cta-btn-primary:hover svg {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Secondary CTA Button - White with Black Text */
+.gus-cta-btn-secondary {
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #e5e5e5;
+}
+
+.gus-cta-btn-secondary:hover {
+    background: #000000;
+    color: #ffffff;
+    border-color: #000000;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.gus-cta-btn-secondary:hover svg {
+    transform: scale(1.1);
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+    .gus-cta-section {
+        padding: 56px 0;
+    }
+    
+    .gus-cta-title {
+        font-size: 1.75rem;
+    }
+    
+    .gus-cta-description {
+        font-size: 1rem;
+    }
+    
+    .gus-cta-buttons {
+        gap: var(--gus-space-md);
+    }
+    
+    .gus-cta-btn {
+        padding: 20px 24px;
+        min-height: 80px;
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .gus-cta-section {
+        padding: 48px 0;
+    }
+    
+    .gus-cta-container {
+        padding: 0 var(--gus-space-lg);
+    }
+    
+    .gus-cta-icon {
+        width: 64px;
+        height: 64px;
+    }
+    
+    .gus-cta-icon svg {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .gus-cta-title {
+        font-size: 1.5rem;
+        line-height: 1.3;
+        margin-bottom: var(--gus-space-md);
+    }
+    
+    .gus-cta-description {
+        font-size: 0.9375rem;
+        margin-bottom: var(--gus-space-xl);
+    }
+    
+    .gus-cta-buttons {
+        grid-template-columns: 1fr;
+        gap: var(--gus-space-md);
+        max-width: 100%;
+    }
+    
+    .gus-cta-btn {
+        padding: 18px 20px;
+        min-height: 70px;
+        font-size: 0.9375rem;
+    }
+    
+    .gus-cta-btn strong {
+        font-size: 1rem;
+    }
+    
+    .gus-cta-btn small {
+        font-size: 0.8125rem;
+    }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 375px) {
+    .gus-cta-section {
+        padding: 40px 0;
+    }
+    
+    .gus-cta-title {
+        font-size: 1.25rem;
+    }
+    
+    .gus-cta-description {
+        font-size: 0.875rem;
+    }
+    
+    .gus-cta-btn {
+        padding: 16px 18px;
+        min-height: 65px;
+        gap: var(--gus-space-sm);
+    }
+    
+    .gus-cta-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .gus-cta-btn,
+    .gus-cta-btn svg,
+    .gus-cta-btn::before {
+        transition: none;
+    }
+    
+    .gus-cta-btn:hover {
+        transform: none;
+    }
+    
+    .gus-cta-btn:hover svg {
+        transform: none;
+    }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .gus-cta-section {
+        background: #000000;
+        border-top: 4px solid #FFD700;
+        border-bottom: 4px solid #FFD700;
+    }
+    
+    .gus-cta-btn-primary {
+        border-width: 3px;
+    }
+    
+    .gus-cta-btn-secondary {
+        border-width: 3px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .gus-cta-section {
+        background: #ffffff;
+        color: #000000;
+        border: 2px solid #000000;
+        padding: 32px 0;
+    }
+    
+    .gus-cta-section::before,
+    .gus-cta-section::after {
+        display: none;
+    }
+    
+    .gus-cta-title,
+    .gus-cta-description {
+        color: #000000;
+    }
+    
+    .gus-cta-buttons {
+        display: none;
+    }
 }
 </style>
 
@@ -2750,6 +3144,54 @@ select {
             endif; 
             ?>
             
+            <!-- PC/モバイル共通 強力なCTAセクション -->
+            <section class="gus-cta-section" style="margin-top: var(--gus-space-2xl); margin-bottom: var(--gus-space-2xl);">
+                <div class="gus-cta-container">
+                    <div class="gus-cta-content">
+                        <div class="gus-cta-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                                <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h2 class="gus-cta-title">
+                            他にも、あなたに合う補助金があるかもしれません
+                        </h2>
+                        <p class="gus-cta-description">
+                            助成金インサイトで最新の補助金情報を検索。<br>
+                            あなたのビジネスに最適な支援制度を見つけましょう。
+                        </p>
+                        <div class="gus-cta-buttons">
+                            <a href="<?php echo home_url('/subsidy-diagnosis/'); ?>" 
+                               class="gus-cta-btn gus-cta-btn-primary"
+                               aria-label="AIで最適な補助金を診断">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                </svg>
+                                <span>
+                                    <strong>AIで診断する</strong>
+                                    <small>あなたに最適な補助金を提案</small>
+                                </span>
+                            </a>
+                            <a href="<?php echo home_url('/grants/'); ?>" 
+                               class="gus-cta-btn gus-cta-btn-secondary"
+                               aria-label="補助金一覧から探す">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="m21 21-4.35-4.35"/>
+                                </svg>
+                                <span>
+                                    <strong>一覧から探す</strong>
+                                    <small>全ての補助金をチェック</small>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
             <!-- カテゴリー・地域リンク -->
             <section class="gus-section" style="margin-top: var(--gus-space-2xl);">
                 <h2 class="gus-section-title" style="font-size: var(--gus-text-lg); font-weight: 700; margin-bottom: var(--gus-space-lg);">
@@ -2815,7 +3257,7 @@ select {
                         <span aria-hidden="true">›</span>
                     </li>
                     <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                        <a href="<?php echo home_url('/grant/'); ?>" itemprop="item" aria-label="補助金一覧ページ">
+                        <a href="<?php echo home_url('/grants/'); ?>" itemprop="item" aria-label="補助金一覧ページ">
                             <span itemprop="name">補助金一覧</span>
                         </a>
                         <meta itemprop="position" content="2">
@@ -2858,6 +3300,56 @@ select {
                     <?php ji_display_ad('single_grant_sidebar_top', 'single-grant'); ?>
                 </div>
             <?php endif; ?>
+            
+            <!-- アクション（UX優先：コンバージョン重視） -->
+            <div class="gus-sidebar-card">
+                <h2 class="gus-sidebar-title">
+                    <span class="gus-icon gus-icon-link"></span>
+                    アクション
+                </h2>
+                <div class="gus-actions">
+                    <!-- 最優先：AI診断 -->
+                    <a href="<?php echo home_url('/subsidy-diagnosis/'); ?>" 
+                       class="gus-btn gus-btn-primary"
+                       aria-label="AIで最適な補助金を診断">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        AI無料診断
+                    </a>
+                    
+                    <!-- 第2優先：補助金一覧 -->
+                    <a href="<?php echo home_url('/grants/'); ?>" 
+                       class="gus-btn gus-btn-secondary"
+                       aria-label="他の補助金を探す">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        他の補助金を探す
+                    </a>
+                    
+                    <!-- 第3優先：公式サイト -->
+                    <?php if ($grant_data['official_url']): ?>
+                    <a href="<?php echo esc_url($grant_data['official_url']); ?>" 
+                       class="gus-btn gus-btn-secondary" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       aria-label="公式サイトで詳細を確認">
+                        <span class="gus-icon gus-icon-link"></span>
+                        公式サイト
+                    </a>
+                    <?php endif; ?>
+                    
+                    <!-- その他：印刷 -->
+                    <button class="gus-btn gus-btn-secondary" 
+                            onclick="window.print()"
+                            aria-label="このページを印刷">
+                        印刷
+                    </button>
+                </div>
+            </div>
             
             <!-- 目次 -->
             <nav class="gus-sidebar-card" aria-label="目次">
@@ -2904,33 +3396,52 @@ select {
                 </ul>
             </nav>
             
-            <!-- アクション -->
+            <!-- アフィリエイト広告: サイドバー中央 -->
+            <?php if (function_exists('ji_display_ad')): ?>
+                <div class="sidebar-ad-space sidebar-ad-middle">
+                    <?php ji_display_ad('single_grant_sidebar_middle', 'single-grant'); ?>
+                </div>
+            <?php endif; ?>
+            
+            <!-- 関連補助金（サイドバー版） -->
+            <?php if ($related_query->have_posts()): ?>
             <div class="gus-sidebar-card">
                 <h2 class="gus-sidebar-title">
-                    <span class="gus-icon gus-icon-link"></span>
-                    アクション
+                    <span class="gus-icon gus-icon-document"></span>
+                    関連補助金
                 </h2>
-                <div class="gus-actions">
-                    <?php if ($grant_data['official_url']): ?>
-                    <a href="<?php echo esc_url($grant_data['official_url']); ?>" 
-                       class="gus-btn gus-btn-primary" 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       aria-label="公式サイトで詳細を確認">
-                        <span class="gus-icon gus-icon-link"></span>
-                        公式サイト
+                <div class="gus-related-mini">
+                    <?php 
+                    $related_query->rewind_posts();
+                    $count = 0;
+                    while ($related_query->have_posts() && $count < 4) : 
+                        $related_query->the_post();
+                        $count++;
+                    ?>
+                    <a href="<?php the_permalink(); ?>" 
+                       class="gus-related-mini-item"
+                       aria-label="<?php echo esc_attr(get_the_title() . 'の詳細を見る'); ?>">
+                        <div class="gus-related-mini-title">
+                            <?php echo wp_trim_words(get_the_title(), 10, '...'); ?>
+                        </div>
+                        <?php
+                        $related_amount = function_exists('get_field') ? get_field('max_amount', get_the_ID()) : '';
+                        if ($related_amount):
+                        ?>
+                        <div class="gus-related-mini-meta">
+                            最大: <?php echo esc_html($related_amount); ?>
+                        </div>
+                        <?php endif; ?>
                     </a>
-                    <?php endif; ?>
-                    
-                    <button class="gus-btn gus-btn-secondary" 
-                            onclick="window.print()"
-                            aria-label="このページを印刷">
-                        印刷
-                    </button>
+                    <?php endwhile; ?>
                 </div>
             </div>
+            <?php 
+            wp_reset_postdata();
+            endif; 
+            ?>
             
-            <!-- PC常時表示AIチャット -->
+            <!-- PC常時表示AIチャット（UX最適化：関連補助金の後に配置） -->
             <div class="gus-pc-ai-permanent">
                 <div class="gus-pc-ai-permanent-header">
                     <div class="gus-pc-ai-permanent-title">
@@ -2994,77 +3505,6 @@ select {
                     </div>
                 </div>
             </div>
-            
-            <!-- アフィリエイト広告: サイドバー中央 -->
-            <?php if (function_exists('ji_display_ad')): ?>
-                <div class="sidebar-ad-space sidebar-ad-middle">
-                    <?php ji_display_ad('single_grant_sidebar_middle', 'single-grant'); ?>
-                </div>
-            <?php endif; ?>
-            
-            <!-- 統計 -->
-            <div class="gus-sidebar-card">
-                <h2 class="gus-sidebar-title">
-                    <span class="gus-icon gus-icon-chart"></span>
-                    統計
-                </h2>
-                <div class="gus-stats-grid">
-                    <div class="gus-stat-item">
-                        <div class="gus-stat-label">閲覧数</div>
-                        <div class="gus-stat-value"><?php echo number_format($grant_data['views_count']); ?></div>
-                    </div>
-                    
-                    <?php if ($days_remaining > 0): ?>
-                    <div class="gus-stat-item">
-                        <div class="gus-stat-label">残日数</div>
-                        <div class="gus-stat-value"><?php echo $days_remaining; ?>日</div>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <div class="gus-stat-item">
-                        <div class="gus-stat-label">難易度</div>
-                        <div class="gus-stat-value"><?php echo $difficulty_data['label']; ?></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 関連補助金（サイドバー版） -->
-            <?php if ($related_query->have_posts()): ?>
-            <div class="gus-sidebar-card">
-                <h2 class="gus-sidebar-title">
-                    <span class="gus-icon gus-icon-document"></span>
-                    関連補助金
-                </h2>
-                <div class="gus-related-mini">
-                    <?php 
-                    $related_query->rewind_posts();
-                    $count = 0;
-                    while ($related_query->have_posts() && $count < 4) : 
-                        $related_query->the_post();
-                        $count++;
-                    ?>
-                    <a href="<?php the_permalink(); ?>" 
-                       class="gus-related-mini-item"
-                       aria-label="<?php echo esc_attr(get_the_title() . 'の詳細を見る'); ?>">
-                        <div class="gus-related-mini-title">
-                            <?php echo wp_trim_words(get_the_title(), 10, '...'); ?>
-                        </div>
-                        <?php
-                        $related_amount = function_exists('get_field') ? get_field('max_amount', get_the_ID()) : '';
-                        if ($related_amount):
-                        ?>
-                        <div class="gus-related-mini-meta">
-                            最大: <?php echo esc_html($related_amount); ?>
-                        </div>
-                        <?php endif; ?>
-                    </a>
-                    <?php endwhile; ?>
-                </div>
-            </div>
-            <?php 
-            wp_reset_postdata();
-            endif; 
-            ?>
             
             <!-- タグ -->
             <?php if ($taxonomies['categories'] || $taxonomies['prefectures'] || $taxonomies['municipalities'] || $taxonomies['tags']): ?>
@@ -3274,18 +3714,27 @@ select {
     </div>
 </div>
 
-<!-- モバイル用スティッキーCTA -->
-<?php if ($grant_data['official_url']): ?>
-<div class="gus-sticky-cta">
-    <a href="<?php echo esc_url($grant_data['official_url']); ?>" 
-       class="gus-btn gus-btn-primary" 
-       target="_blank" 
-       rel="noopener noreferrer"
-       aria-label="公式サイトで申請する">
-        公式サイトで申請する →
+<!-- モバイル用スティッキーCTA - サイト内回遊優先 -->
+<div class="gus-sticky-cta gus-sticky-cta-dual">
+    <a href="<?php echo home_url('/subsidy-diagnosis/'); ?>" 
+       class="gus-btn gus-btn-primary gus-sticky-cta-btn" 
+       aria-label="あなたに合う補助金を診断する">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        診断する
+    </a>
+    <a href="<?php echo home_url('/grants/'); ?>" 
+       class="gus-btn gus-btn-secondary gus-sticky-cta-btn" 
+       aria-label="他の補助金を探す">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+        </svg>
+        探す
     </a>
 </div>
-<?php endif; ?>
 
 <!-- JavaScript -->
 <script>

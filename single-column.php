@@ -3,9 +3,19 @@
  * Single Column Template - Enhanced SEO & Wide Sidebar
  * コラム記事詳細ページ - SEO最適化 + ワイドサイドバー
  * 
+ * 関連補助金連携:
+ * - ACFの「related_grants」フィールドで手動設定された補助金を優先表示
+ * - 設定がない場合、コラムカテゴリに基づいて自動的に関連補助金を表示
+ * - サイドバー（PC）とメインコンテンツ下部（モバイル）の両方に表示
+ * 
+ * UX改善（v5.0.0）:
+ * - 記事直後に最強CTA（AI診断・補助金検索）を設置 - コンバージョン最適化
+ * - 「この記事はこんな方におすすめ」を記事冒頭に移動 - 結論ファースト
+ * - サイドバー順序: 目次→関連補助金→人気記事→AIチャット（UX優先）
+ * 
  * @package Grant_Insight_Perfect
  * @subpackage Column_System
- * @version 4.0.0 - SEO Enhanced + Wide Sticky Sidebar
+ * @version 5.0.0 - UX Optimization: Target Audience First & Strong CTA
  */
 
 get_header();
@@ -42,31 +52,47 @@ $related_query = new WP_Query(array(
 ));
 
 // 関連補助金を取得
-$related_grants_args = array(
-    'post_type' => 'grant',
-    'posts_per_page' => 4,
-    'post_status' => 'publish',
-    'orderby' => 'rand',
-);
+// 優先度1: ACFの「related_grants」フィールドから取得
+$acf_related_grants = get_field('related_grants', $post_id);
+$related_grants_query = null;
 
-// カテゴリーがあれば関連付ける
-if ($categories && !is_wp_error($categories) && !empty($categories)) {
-    $category_names = array_map(function($cat) {
-        return $cat->name;
-    }, $categories);
-    
-    // コラムカテゴリーに基づいて助成金カテゴリーを検索
-    $related_grants_args['tax_query'] = array(
-        array(
-            'taxonomy' => 'grant_category',
-            'field' => 'name',
-            'terms' => $category_names,
-            'operator' => 'IN'
-        )
+if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
+    // ACFで手動設定された関連補助金がある場合
+    $related_grants_query = new WP_Query(array(
+        'post_type' => 'grant',
+        'post__in' => $acf_related_grants,
+        'posts_per_page' => 4,
+        'post_status' => 'publish',
+        'orderby' => 'post__in', // ACFの順序を維持
+    ));
+} else {
+    // 優先度2: カテゴリベースの自動関連付け
+    $related_grants_args = array(
+        'post_type' => 'grant',
+        'posts_per_page' => 4,
+        'post_status' => 'publish',
+        'orderby' => 'rand',
     );
+    
+    // カテゴリーがあれば関連付ける
+    if ($categories && !is_wp_error($categories) && !empty($categories)) {
+        $category_names = array_map(function($cat) {
+            return $cat->name;
+        }, $categories);
+        
+        // コラムカテゴリーに基づいて助成金カテゴリーを検索
+        $related_grants_args['tax_query'] = array(
+            array(
+                'taxonomy' => 'grant_category',
+                'field' => 'name',
+                'terms' => $category_names,
+                'operator' => 'IN'
+            )
+        );
+    }
+    
+    $related_grants_query = new WP_Query($related_grants_args);
 }
-
-$related_grants_query = new WP_Query($related_grants_args);
 ?>
 
 <!-- SEO: 構造化データ - パンくずリスト -->
@@ -265,16 +291,7 @@ $related_grants_query = new WP_Query($related_grants_args);
 
             </header>
 
-            <!-- アイキャッチ画像 -->
-            <?php if (has_post_thumbnail()): ?>
-                <figure class="column-thumbnail" itemprop="image" itemscope itemtype="https://schema.org/ImageObject">
-                    <?php the_post_thumbnail('large', array('itemprop' => 'url contentUrl')); ?>
-                    <meta itemprop="width" content="<?php echo get_the_post_thumbnail_url($post_id, 'large') ? '1200' : ''; ?>">
-                    <meta itemprop="height" content="<?php echo get_the_post_thumbnail_url($post_id, 'large') ? '630' : ''; ?>">
-                </figure>
-            <?php endif; ?>
-
-            <!-- 対象読者 -->
+            <!-- 対象読者（結論ファースト：記事の最上部に配置） -->
             <?php if ($target_audience && is_array($target_audience) && count($target_audience) > 0): ?>
                 <aside class="target-audience-box" aria-label="対象読者">
                     <h2 class="box-title">
@@ -303,10 +320,67 @@ $related_grants_query = new WP_Query($related_grants_args);
                 </aside>
             <?php endif; ?>
 
+            <!-- アイキャッチ画像 -->
+            <?php if (has_post_thumbnail()): ?>
+                <figure class="column-thumbnail" itemprop="image" itemscope itemtype="https://schema.org/ImageObject">
+                    <?php the_post_thumbnail('large', array('itemprop' => 'url contentUrl')); ?>
+                    <meta itemprop="width" content="<?php echo get_the_post_thumbnail_url($post_id, 'large') ? '1200' : ''; ?>">
+                    <meta itemprop="height" content="<?php echo get_the_post_thumbnail_url($post_id, 'large') ? '630' : ''; ?>">
+                </figure>
+            <?php endif; ?>
+
             <!-- 記事本文 -->
             <div class="column-content" itemprop="articleBody">
                 <?php the_content(); ?>
             </div>
+
+            <!-- 記事終了後の最強CTAボックス - UX最適化版（AI診断 + 補助金検索） -->
+            <section class="gus-cta-section" style="margin-top: var(--gus-space-2xl); margin-bottom: var(--gus-space-2xl);" role="complementary" aria-label="次のアクション">
+                <div class="gus-cta-container">
+                    <div class="gus-cta-content">
+                        <div class="gus-cta-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                                <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h2 class="gus-cta-title">
+                            あなたに合う補助金・助成金を今すぐ見つけましょう
+                        </h2>
+                        <p class="gus-cta-description">
+                            AI診断で最適な補助金を提案。<br>
+                            助成金インサイトであなたのビジネスに最適な支援制度を見つけましょう。
+                        </p>
+                        <div class="gus-cta-buttons">
+                            <a href="<?php echo home_url('/subsidy-diagnosis/'); ?>" 
+                               class="gus-cta-btn gus-cta-btn-primary"
+                               aria-label="AIで最適な補助金を診断">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                </svg>
+                                <span>
+                                    <strong>AIで診断する</strong>
+                                    <small>あなたに最適な補助金を提案</small>
+                                </span>
+                            </a>
+                            <a href="<?php echo home_url('/grants/'); ?>" 
+                               class="gus-cta-btn gus-cta-btn-secondary"
+                               aria-label="補助金一覧から探す">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="m21 21-4.35-4.35"/>
+                                </svg>
+                                <span>
+                                    <strong>一覧から探す</strong>
+                                    <small>全ての補助金をチェック</small>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- タグ -->
             <?php if ($tags && !is_wp_error($tags)): ?>
@@ -357,7 +431,7 @@ $related_grants_query = new WP_Query($related_grants_args);
             </aside>
 
             <!-- スマホ用: 関連する補助金 -->
-            <?php if ($related_grants_query->have_posts()): ?>
+            <?php if ($related_grants_query && $related_grants_query->have_posts()): ?>
             <section class="mobile-related-grants" aria-labelledby="mobile-related-grants-title">
                 <h2 class="section-title" id="mobile-related-grants-title">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -406,7 +480,7 @@ $related_grants_query = new WP_Query($related_grants_args);
                     wp_reset_postdata(); 
                     ?>
                 </div>
-                <a href="<?php echo home_url('/grant/'); ?>" class="mobile-view-all-grants">
+                <a href="<?php echo home_url('/grants/'); ?>" class="mobile-view-all-grants">
                     すべての補助金を見る
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="5" y1="12" x2="19" y2="12"/>
@@ -456,77 +530,10 @@ $related_grants_query = new WP_Query($related_grants_args);
                 </div>
             </section>
             
-            <!-- PC常時表示AIチャット -->
-            <div class="gus-pc-ai-permanent">
-                <div class="gus-pc-ai-permanent-header">
-                    <div class="gus-pc-ai-permanent-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                            <circle cx="9" cy="10" r="1" fill="currentColor"/>
-                            <circle cx="15" cy="10" r="1" fill="currentColor"/>
-                        </svg>
-                        <span>AIコラムアシスタント</span>
-                    </div>
-                    <div class="gus-pc-ai-permanent-subtitle"><?php echo esc_html(wp_trim_words(get_the_title(), 10, '...')); ?></div>
-                </div>
-                
-                <div class="gus-pc-ai-permanent-messages" id="pcPermanentMessages" role="log" aria-live="polite" aria-atomic="false">
-                    <!-- 初期ウェルカムメッセージ -->
-                    <div class="gus-ai-message gus-ai-message--assistant">
-                        <div class="gus-ai-message-avatar" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2v20M2 12h20"/>
-                            </svg>
-                        </div>
-                        <div class="gus-ai-message-content">
-                            こんにちは！このコラムについて何でもお聞きください。<br>
-                            内容の詳細、関連する補助金情報など、詳しくお答えします。
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="gus-pc-ai-permanent-input-container">
-                    <div class="gus-pc-ai-permanent-input-wrapper">
-                        <textarea 
-                            class="gus-pc-ai-permanent-input" 
-                            id="pcPermanentInput"
-                            placeholder="例：この記事の要約を教えて"
-                            rows="2"
-                            aria-label="質問を入力してください"></textarea>
-                        <button 
-                            class="gus-pc-ai-permanent-send" 
-                            id="pcPermanentSend"
-                            type="button"
-                            aria-label="質問を送信">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <line x1="22" y1="2" x2="11" y2="13"/>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="gus-pc-ai-permanent-suggestions" role="group" aria-label="質問の候補">
-                        <button class="gus-pc-ai-permanent-suggestion" type="button" data-question="この記事の要約を教えて">
-                            記事の要約
-                        </button>
-                        <button class="gus-pc-ai-permanent-suggestion" type="button" data-question="関連する補助金を教えて">
-                            関連補助金
-                        </button>
-                        <button class="gus-pc-ai-permanent-suggestion" type="button" data-question="具体的なアクションプランを教えて">
-                            アクションプラン
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <!-- アフィリエイト広告: サイドバー中央 -->
-            <?php if (function_exists('ji_display_ad')): ?>
-                <div class="sidebar-ad-space sidebar-ad-middle">
-                    <?php ji_display_ad('single_column_sidebar_middle', 'single-column'); ?>
-                </div>
-            <?php endif; ?>
             
             <!-- 関連する補助金 -->
-            <?php if ($related_grants_query->have_posts()): ?>
+            <?php if ($related_grants_query && $related_grants_query->have_posts()): ?>
             <section class="sidebar-card related-grants-card" aria-labelledby="related-grants-title">
                 <header class="card-header">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -585,7 +592,7 @@ $related_grants_query = new WP_Query($related_grants_args);
                             </article>
                         <?php endwhile; wp_reset_postdata(); ?>
                     </div>
-                    <a href="<?php echo home_url('/grant/'); ?>" class="view-all-grants">
+                    <a href="<?php echo home_url('/grants/'); ?>" class="view-all-grants">
                         すべての補助金を見る
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -1034,6 +1041,322 @@ $related_grants_query = new WP_Query($related_grants_args);
 .tag-link:focus {
     background: var(--color-accent);
     transform: translateY(-2px);
+}
+
+/* 最強CTAボックス - 記事終了後の行動誘導（UX最適化版） */
+.gus-cta-section {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: #ffffff;
+    padding: 64px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.gus-cta-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+}
+
+.gus-cta-section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+}
+
+.gus-cta-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--gus-space-xl, 32px);
+}
+
+.gus-cta-content {
+    text-align: center;
+}
+
+.gus-cta-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 50%;
+    margin-bottom: var(--gus-space-lg, 24px);
+    color: #FFD700;
+}
+
+.gus-cta-icon svg {
+    width: 48px;
+    height: 48px;
+}
+
+.gus-cta-title {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: var(--gus-space-lg, 24px);
+    color: #ffffff;
+}
+
+.gus-cta-description {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin-bottom: var(--gus-space-2xl, 48px);
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.gus-cta-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--gus-space-lg, 24px);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.gus-cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gus-space-md, 16px);
+    padding: 24px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 90px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gus-cta-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.gus-cta-btn:hover::before {
+    left: 100%;
+}
+
+.gus-cta-btn svg {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+}
+
+.gus-cta-btn span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    text-align: left;
+}
+
+.gus-cta-btn strong {
+    font-size: 1.125rem;
+    font-weight: 700;
+    display: block;
+}
+
+.gus-cta-btn small {
+    font-size: 0.875rem;
+    font-weight: 400;
+    opacity: 0.9;
+    display: block;
+}
+
+/* Primary CTA Button - Black with Yellow Accent */
+.gus-cta-btn-primary {
+    background: #000000;
+    color: #ffffff;
+    border: 2px solid #FFD700;
+}
+
+.gus-cta-btn-primary:hover {
+    background: #FFD700;
+    color: #000000;
+    border-color: #FFD700;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+}
+
+.gus-cta-btn-primary:hover svg {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Secondary CTA Button - White with Black Text */
+.gus-cta-btn-secondary {
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #e5e5e5;
+}
+
+.gus-cta-btn-secondary:hover {
+    background: #000000;
+    color: #ffffff;
+    border-color: #000000;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.gus-cta-btn-secondary:hover svg {
+    transform: scale(1.1);
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+    .gus-cta-section {
+        padding: 56px 0;
+    }
+    
+    .gus-cta-title {
+        font-size: 1.75rem;
+    }
+    
+    .gus-cta-description {
+        font-size: 1rem;
+    }
+    
+    .gus-cta-buttons {
+        gap: var(--gus-space-md, 16px);
+    }
+    
+    .gus-cta-btn {
+        padding: 20px 24px;
+        min-height: 80px;
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .gus-cta-section {
+        padding: 48px 0;
+    }
+    
+    .gus-cta-container {
+        padding: 0 var(--gus-space-lg, 24px);
+    }
+    
+    .gus-cta-icon {
+        width: 64px;
+        height: 64px;
+    }
+    
+    .gus-cta-icon svg {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .gus-cta-title {
+        font-size: 1.5rem;
+        line-height: 1.3;
+        margin-bottom: var(--gus-space-md, 16px);
+    }
+    
+    .gus-cta-description {
+        font-size: 0.9375rem;
+        margin-bottom: var(--gus-space-xl, 32px);
+    }
+    
+    .gus-cta-buttons {
+        grid-template-columns: 1fr;
+        gap: var(--gus-space-md, 16px);
+        max-width: 100%;
+    }
+    
+    .gus-cta-btn {
+        padding: 18px 20px;
+        min-height: 70px;
+        font-size: 0.9375rem;
+    }
+    
+    .gus-cta-btn strong {
+        font-size: 1rem;
+    }
+    
+    .gus-cta-btn small {
+        font-size: 0.8125rem;
+    }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 375px) {
+    .gus-cta-section {
+        padding: 40px 0;
+    }
+    
+    .gus-cta-title {
+        font-size: 1.25rem;
+    }
+    
+    .gus-cta-description {
+        font-size: 0.875rem;
+    }
+    
+    .gus-cta-btn {
+        padding: 16px 18px;
+        min-height: 65px;
+        gap: var(--gus-space-sm, 12px);
+    }
+    
+    .gus-cta-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .gus-cta-btn,
+    .gus-cta-btn svg,
+    .gus-cta-btn::before {
+        transition: none;
+    }
+    
+    .gus-cta-btn:hover {
+        transform: none;
+    }
+    
+    .gus-cta-btn:hover svg {
+        transform: none;
+    }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .gus-cta-section {
+        background: #000000;
+        border-top: 4px solid #FFD700;
+        border-bottom: 4px solid #FFD700;
+    }
+    
+    .gus-cta-btn-primary {
+        border-width: 3px;
+    }
+    
+    .gus-cta-btn-secondary {
+        border-width: 3px;
+    }
 }
 
 /* シェアボタン */
