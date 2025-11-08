@@ -73,8 +73,9 @@ $status_config = array(
 );
 $status_data = $status_config[$application_status] ?? $status_config['open'];
 
-// 締切情報（シンプル化）
+// 締切情報（明確化：締切日を常に表示）
 $deadline_display = '';
+$deadline_urgency = ''; // 緊急度表示（残り〇日）
 $deadline_class = '';
 $is_urgent = false;
 
@@ -84,22 +85,24 @@ if ($deadline_date) {
         $current_time = current_time('timestamp');
         $days_remaining = ceil(($deadline_timestamp - $current_time) / (60 * 60 * 24));
         
+        // 実際の締切日を常に表示（Y/m/d形式）
+        $deadline_display = date('Y/m/d', $deadline_timestamp) . '締切';
+        
         if ($days_remaining <= 0) {
-            $deadline_display = '締切済';
+            $deadline_display = date('Y/m/d', $deadline_timestamp) . '締切済';
             $deadline_class = 'deadline-expired';
         } elseif ($days_remaining <= 3) {
-            $deadline_display = '残り' . $days_remaining . '日';
+            $deadline_urgency = 'あと' . $days_remaining . '日';
             $deadline_class = 'deadline-critical';
             $is_urgent = true;
         } elseif ($days_remaining <= 7) {
-            $deadline_display = '残り' . $days_remaining . '日';
+            $deadline_urgency = 'あと' . $days_remaining . '日';
             $deadline_class = 'deadline-warning';
             $is_urgent = true;
         } elseif ($days_remaining <= 14) {
-            $deadline_display = date('n/j', $deadline_timestamp) . 'まで';
+            $deadline_urgency = 'あと' . $days_remaining . '日';
             $deadline_class = 'deadline-soon';
         } else {
-            $deadline_display = date('n/j', $deadline_timestamp);
             $deadline_class = 'deadline-normal';
         }
     }
@@ -381,6 +384,14 @@ $catch_tags = array_slice($catch_tags, 0, 2);
     gap: 10px;
 }
 
+/* 締切情報コンテナ */
+.deadline-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 .deadline-badge {
     padding: 6px 12px;
     border-radius: 4px;
@@ -394,12 +405,34 @@ $catch_tags = array_slice($catch_tags, 0, 2);
     line-height: 1;
 }
 
-.deadline-critical {
+/* 緊急度バッジ（あと〇日） */
+.deadline-urgency {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 5px 10px;
+    height: 28px;
+}
+
+/* 締切日バッジ */
+.deadline-date {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* 緊急度の色（あと〇日） */
+.deadline-urgency.deadline-critical {
+    background: var(--y-red);
+    color: #FFF;
+    border-color: var(--y-red);
+    /* アニメーションは0.3秒遅延 */
+    animation: pulse 1.5s ease infinite 0.3s;
+}
+
+/* 締切日の色 */
+.deadline-date.deadline-critical {
     background: #FFEBEE;
     color: var(--y-red);
     border-color: var(--y-red);
-    /* アニメーションは0.3秒遅延 */
-    animation: shake 0.5s ease infinite 0.3s;
 }
 
 @keyframes shake {
@@ -408,25 +441,37 @@ $catch_tags = array_slice($catch_tags, 0, 2);
     75% { transform: translateX(1px); }
 }
 
-.deadline-warning {
+.deadline-urgency.deadline-warning {
+    background: var(--y-warning);
+    color: #FFF;
+    border-color: var(--y-warning);
+}
+
+.deadline-date.deadline-warning {
     background: #FFF3E0;
     color: var(--y-warning);
     border-color: var(--y-warning);
 }
 
-.deadline-soon {
+.deadline-urgency.deadline-soon {
+    background: #F57F17;
+    color: #FFF;
+    border-color: #F57F17;
+}
+
+.deadline-date.deadline-soon {
     background: #FFFDE7;
     color: #F57F17;
     border-color: #FBC02D;
 }
 
-.deadline-normal {
+.deadline-date.deadline-normal {
     background: var(--y-hover);
     color: var(--y-gray-dark);
     border-color: var(--y-border);
 }
 
-.deadline-expired {
+.deadline-date.deadline-expired {
     background: #F5F5F5;
     color: #9E9E9E;
     border-color: #E0E0E0;
@@ -682,10 +727,17 @@ $catch_tags = array_slice($catch_tags, 0, 2);
                 
                 <!-- 締切 -->
                 <?php if ($deadline_display): ?>
-                <div class="deadline-badge <?php echo esc_attr($deadline_class); ?>" 
-                     itemprop="validThrough" 
-                     content="<?php echo esc_attr($deadline_date); ?>">
-                    <?php echo esc_html($deadline_display); ?>
+                <div class="deadline-info">
+                    <?php if ($deadline_urgency): ?>
+                    <div class="deadline-badge deadline-urgency <?php echo esc_attr($deadline_class); ?>">
+                        <?php echo esc_html($deadline_urgency); ?>
+                    </div>
+                    <?php endif; ?>
+                    <div class="deadline-badge deadline-date <?php echo esc_attr($deadline_class); ?>" 
+                         itemprop="validThrough" 
+                         content="<?php echo esc_attr($deadline_date); ?>">
+                        <?php echo esc_html($deadline_display); ?>
+                    </div>
                 </div>
                 <?php endif; ?>
                 

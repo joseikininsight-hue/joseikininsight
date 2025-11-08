@@ -503,25 +503,30 @@ if (!function_exists('gi_get_cached_stats')) {
            BACK TO TOP BUTTON
            =============================================== */
         .ji-back-to-top {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 56px;
-            height: 56px;
-            background: var(--footer-text);
-            color: var(--footer-bg);
-            border: none;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            cursor: pointer;
+            position: fixed !important;
+            bottom: 2rem !important;
+            right: 2rem !important;
+            left: auto !important; /* Prevent left positioning */
+            top: auto !important; /* Prevent top positioning */
+            width: 56px !important;
+            height: 56px !important;
+            background: var(--footer-text) !important;
+            color: var(--footer-bg) !important;
+            border: none !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.25rem !important;
+            cursor: pointer !important;
             opacity: 0;
             visibility: hidden;
-            transition: all var(--footer-transition);
-            z-index: 9998;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all var(--footer-transition) !important;
+            z-index: 999999 !important; /* Override MonsterInsights and other plugins */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
         }
         
         .ji-back-to-top.show {
@@ -530,9 +535,75 @@ if (!function_exists('gi_get_cached_stats')) {
         }
         
         .ji-back-to-top:hover {
-            background: rgba(255, 255, 255, 0.9);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            background: rgba(255, 255, 255, 0.9) !important;
+            transform: translateY(-4px) !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+        }
+        
+        /* Hide other back-to-top buttons that might conflict */
+        button:not(#ji-back-to-top)[class*="back-to-top"],
+        button:not(#ji-back-to-top)[id*="back-to-top"],
+        a:not(#ji-back-to-top)[class*="back-to-top"],
+        a:not(#ji-back-to-top)[id*="back-to-top"],
+        .back-to-top:not(#ji-back-to-top),
+        #back-to-top:not(.ji-back-to-top),
+        [class*="scroll-to-top"]:not(#ji-back-to-top),
+        [class*="scrolltop"]:not(#ji-back-to-top),
+        [id*="scroll-top"]:not(#ji-back-to-top) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        
+        /* Hide MonsterInsights branding - COMPREHENSIVE */
+        /* Target all possible MonsterInsights elements */
+        .monsterinsights-frontend-tracking,
+        .monsterinsights-badge,
+        .monsterinsights-banner,
+        .monsterinsights-popup,
+        .monsterinsights-widget,
+        .monsterinsights-indicator,
+        .monsterinsights-logo,
+        .monsterinsights-branding,
+        [class*="monsterinsights"],
+        [id*="monsterinsights"],
+        [class*="MonsterInsights"],
+        [id*="MonsterInsights"],
+        /* Target Monster Insights variations */
+        [class*="monster-insights"],
+        [id*="monster-insights"],
+        [class*="Monster-Insights"],
+        [id*="Monster-Insights"],
+        /* Target common tracking/analytics badges */
+        [class*="analytics-badge"],
+        [class*="tracking-badge"],
+        /* Target by image alt text pattern */
+        img[alt*="MonsterInsights"],
+        img[alt*="Monster Insights"],
+        img[src*="monsterinsights"],
+        img[src*="monster-insights"],
+        /* Target anchor links */
+        a[href*="monsterinsights"],
+        a[href*="monster-insights"],
+        /* Target divs with inline styles (common for injected content) */
+        div[style*="monsterinsights"],
+        /* Specific patterns seen in wild */
+        .mi-badge,
+        .mi-tracking,
+        .mi-widget,
+        #mi-badge,
+        #mi-tracking {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            position: absolute !important;
+            left: -9999px !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            pointer-events: none !important;
         }
         
         /* ===============================================
@@ -863,12 +934,90 @@ if (!function_exists('gi_get_cached_stats')) {
         
         console.log('[✓] Joseikin Insight Footer initialized');
         
+        // Remove MonsterInsights and conflicting elements dynamically
+        function removeUnwantedElements() {
+            // MonsterInsights patterns
+            const monsterInsightsSelectors = [
+                '[class*="monsterinsights"]',
+                '[id*="monsterinsights"]',
+                '[class*="MonsterInsights"]',
+                '[id*="MonsterInsights"]',
+                '[class*="monster-insights"]',
+                '[id*="monster-insights"]',
+                'img[alt*="MonsterInsights"]',
+                'img[alt*="Monster Insights"]',
+                'img[src*="monsterinsights"]',
+                'a[href*="monsterinsights"]',
+                '.mi-badge',
+                '#mi-badge'
+            ];
+            
+            // Conflicting back-to-top buttons
+            const conflictingButtons = [
+                'button:not(#ji-back-to-top)[class*="back-to-top"]',
+                'button:not(#ji-back-to-top)[id*="back-to-top"]',
+                'a:not(#ji-back-to-top)[class*="back-to-top"]',
+                '.back-to-top:not(#ji-back-to-top)',
+                '#back-to-top:not(.ji-back-to-top)',
+                '[class*="scroll-to-top"]:not(#ji-back-to-top)',
+                '[class*="scrolltop"]:not(#ji-back-to-top)'
+            ];
+            
+            const allSelectors = [...monsterInsightsSelectors, ...conflictingButtons];
+            
+            allSelectors.forEach(selector => {
+                try {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => {
+                        if (el && el.id !== 'ji-back-to-top') {
+                            el.remove();
+                            console.log('[Removed unwanted element]:', selector);
+                        }
+                    });
+                } catch (e) {
+                    // Ignore selector errors
+                }
+            });
+        }
+        
+        // Run immediately
+        removeUnwantedElements();
+        
+        // Run after DOM is fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', removeUnwantedElements);
+        }
+        
+        // Run after all resources are loaded (including plugins)
+        window.addEventListener('load', () => {
+            removeUnwantedElements();
+            // Run again after a delay to catch late-loading elements
+            setTimeout(removeUnwantedElements, 1000);
+            setTimeout(removeUnwantedElements, 3000);
+        });
+        
+        // Monitor for dynamically added elements using MutationObserver
+        const observer = new MutationObserver((mutations) => {
+            let shouldCheck = false;
+            mutations.forEach(mutation => {
+                if (mutation.addedNodes.length > 0) {
+                    shouldCheck = true;
+                }
+            });
+            if (shouldCheck) {
+                removeUnwantedElements();
+            }
+        });
+        
+        // Start observing
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
     })();
     </script>
 
-    <?php wp_footer(); ?>
-</body>
-</html>
     <?php wp_footer(); ?>
 </body>
 </html>

@@ -202,7 +202,7 @@ $schema_data = [
                 </nav>
 
                 <!-- タブコンテンツ -->
-                <div class="gi-tabs-content">
+                <div class="gi-tabs-content gi-all-visible">
                     
                     <!-- 補助金タブ -->
                     <div class="gi-tab-panel active" 
@@ -477,7 +477,7 @@ $schema_data = [
                     </div>
 
                     <!-- コラムタブ -->
-                    <div class="gi-tab-panel" 
+                    <div class="gi-tab-panel active" 
                          id="panel-columns" 
                          role="tabpanel" 
                          aria-labelledby="tab-columns">
@@ -607,7 +607,7 @@ $schema_data = [
                     </div>
 
                     <!-- お知らせタブ -->
-                    <div class="gi-tab-panel" 
+                    <div class="gi-tab-panel active" 
                          id="panel-news" 
                          role="tabpanel" 
                          aria-labelledby="tab-news">
@@ -885,10 +885,26 @@ $schema_data = [
 .gi-tab-panel {
     display: none;
     padding: 0;
+    margin-bottom: 24px;
 }
 
 .gi-tab-panel.active {
     display: block;
+}
+
+/* 全タブ表示モード */
+.gi-tabs-content.gi-all-visible .gi-tab-panel {
+    display: block;
+    border-bottom: 2px solid var(--gi-yahoo-gray-200);
+}
+
+.gi-tabs-content.gi-all-visible .gi-tab-panel:last-child {
+    border-bottom: none;
+}
+
+/* 全表示モード時はタブナビを非表示にしない（残す） */
+.gi-tabs-content.gi-all-visible .gi-tabs-nav {
+    /* タブナビは残す - ユーザーが特定セクションにジャンプできる */
 }
 
 /* ===== Subtabs ===== */
@@ -1309,6 +1325,7 @@ $schema_data = [
     mainTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             const targetTab = this.dataset.tab;
+            const targetPanel = document.getElementById(`panel-${targetTab}`);
             
             // タブのアクティブ切り替え
             mainTabs.forEach(t => {
@@ -1318,11 +1335,13 @@ $schema_data = [
             this.classList.add('active');
             this.setAttribute('aria-selected', 'true');
             
-            // パネルの表示切り替え
-            mainPanels.forEach(p => {
-                p.classList.remove('active');
-            });
-            document.getElementById(`panel-${targetTab}`).classList.add('active');
+            // スムーズスクロールでパネルにジャンプ
+            if (targetPanel) {
+                targetPanel.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
         });
     });
     
