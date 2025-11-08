@@ -1,0 +1,74 @@
+# Grant Insight Portal - Robots.txt
+# SEO最適化版
+
+User-agent: *
+Allow: /
+
+# 重要なページを優先的にクロール
+Sitemap: https://joserkoin.com/sitemap.xml
+Sitemap: https://joserkoin.com/sitemap_index.xml
+
+# クロールを促進するページ
+Crawl-delay: 0
+
+# クロール不要なファイル・ディレクトリ
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-content/plugins/
+Disallow: /wp-content/cache/
+Disallow: /wp-content/themes/*/assets/
+
+# 検索パラメータ（重複コンテンツ防止）
+Disallow: /*?s=
+Disallow: /*&s=
+Disallow: /search/
+Disallow: /?s=
+
+# プレビュー・下書き
+Disallow: /*?preview=
+Disallow: /*/preview/
+
+# フィード（RSS）は許可
+Allow: /feed/
+Allow: /*/feed/
+
+# 管理画面へのログインページは除外
+Disallow: /wp-login.php
+Disallow: /wp-register.php
+
+# 特殊ページは除外
+Disallow: /cgi-bin/
+Disallow: /trackback/
+Disallow: /xmlrpc.php
+
+# 一時ファイル・バックアップファイル
+Disallow: /*.php$
+Allow: /index.php
+
+# Google、Bingなど主要検索エンジン向け最適化
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /wp-content/uploads/
+
+User-agent: Bingbot
+Allow: /
+
+# 悪質なボット対策
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# サイトマップの場所（重要）
+# WordPress標準のサイトマップ
+Sitemap: https://joseikin.com/wp-sitemap.xml
+Sitemap: https://joseikin.com/sitemap.xml
