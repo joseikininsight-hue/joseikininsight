@@ -1,21 +1,27 @@
 <?php
 /**
- * Grant Single Page - Complete SEO & UX Optimized v17.0 CONVERSION OPTIMIZED
+ * Grant Single Page - Complete SEO & UX Optimized v18.0 PERFECT CONVERSION
  * 補助金詳細ページ - 完全版（PC常時AIチャット・モバイルボタン式・SEO完璧対応）
  * 
- * サイドバー順序（UX最適化 v17.0）:
+ * サイドバー順序（UX最適化 v18.0 - 完璧な構成）:
  * - アクション（AI無料診断→補助金検索→公式サイト→印刷）- コンバージョン優先順
  * - 目次
+ * - 統計情報（閲覧数・残日数・難易度）- ユーザー行動決定要因
  * - アフィリエイト広告（中央）
  * - 関連補助金
  * - AIチャット（サポート機能として下部に配置）
  * - タグ
  * 
- * アクションボタン優先順位（v17.0改善）:
- * 1. AI無料診断（Primary）- 最優先コンバージョン
+ * アクションボタン優先順位（v18.0完璧）:
+ * 1. AI無料診断（Primary）- 最優先コンバージョン（緑色）
  * 2. 他の補助金を探す（Secondary）- サイト内回遊促進
  * 3. 公式サイト（Secondary）- 外部リンク
  * 4. 印刷（Secondary）- ユーティリティ
+ * 
+ * 統計情報カード（v18.0新規追加）:
+ * - 閲覧数: サイト人気度の指標
+ * - 残日数: 最重要な行動決定要因（色分け表示）
+ * - 難易度: 申請の難易度（3段階ドット表示）
  * 
  * スティッキーCTA（モバイル）:
  * - 「診断する」（補助金診断ページ）
@@ -23,7 +29,7 @@
  * - サイト内回遊を最優先、公式サイトへの離脱を防止
  * 
  * @package Grant_Insight_Perfect
- * @version 17.0.0-ux-conversion-optimized
+ * @version 18.0.0-perfect-conversion-optimized
  */
 
 if (!defined('ABSPATH')) {
@@ -3395,6 +3401,42 @@ select {
                     </li>
                 </ul>
             </nav>
+            
+            <!-- 統計カード（閲覧数・残日数・難易度） -->
+            <div class="gus-sidebar-card">
+                <h2 class="gus-sidebar-title">
+                    <span class="gus-icon gus-icon-chart"></span>
+                    統計情報
+                </h2>
+                <div class="gus-stats-grid">
+                    <!-- 閲覧数 -->
+                    <div class="gus-stat-item">
+                        <div class="gus-stat-label">閲覧数</div>
+                        <div class="gus-stat-value"><?php echo number_format($grant_data['views_count']); ?></div>
+                    </div>
+                    
+                    <!-- 残日数 -->
+                    <?php if (!empty($deadline_info) && isset($days_remaining) && $days_remaining > 0): ?>
+                    <div class="gus-stat-item <?php echo esc_attr($deadline_class); ?>">
+                        <div class="gus-stat-label">残日数</div>
+                        <div class="gus-stat-value" style="color: <?php echo $days_remaining <= 7 ? '#DC2626' : ($days_remaining <= 30 ? '#F59E0B' : '#10B981'); ?>">
+                            <?php echo $days_remaining; ?>日
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- 難易度 -->
+                    <div class="gus-stat-item">
+                        <div class="gus-stat-label">難易度</div>
+                        <div class="gus-stat-value">
+                            <?php echo str_repeat('●', $difficulty_data['dots']) . str_repeat('○', 3 - $difficulty_data['dots']); ?>
+                        </div>
+                        <div style="font-size: 10px; color: #666; margin-top: 4px;">
+                            <?php echo esc_html($difficulty_data['description']); ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- アフィリエイト広告: サイドバー中央 -->
             <?php if (function_exists('ji_display_ad')): ?>
