@@ -1,6 +1,6 @@
 <?php
 /**
- * Grant Single Page - Complete SEO & UX Optimized v18.0 PERFECT CONVERSION
+ * Grant Single Page - Complete SEO & UX Optimized v19.1 MOBILE VISIBILITY FIX
  * 補助金詳細ページ - 完全版（PC常時AIチャット・モバイルボタン式・SEO完璧対応）
  * 
  * サイドバー順序（UX最適化 v18.0 - 完璧な構成）:
@@ -23,11 +23,13 @@
  * - 残日数: 最重要な行動決定要因（色分け表示）
  * - 難易度: 申請の難易度（3段階ドット表示）
  * 
- * 双方向リンク機能（v19.0新機能）:
+ * 双方向リンク機能（v19.0新機能 → v19.1モバイル表示対応）:
  * - コラムから補助金への紐付け: 既存のACF「related_grants」フィールド使用
  * - 補助金からコラムへの逆参照: この補助金を紐付けているコラムを自動検出
- * - サイドバーに「詳しい記事」セクション表示
- * - 記事タイトル、カテゴリ、読了時間を表示
+ * - サイドバーに「詳しい記事」セクション表示（PCのみ）
+ * - メインコンテンツに「詳しい記事」セクション追加（PC/モバイル共通）v19.1
+ * - 記事タイトル、カテゴリ、読了時間、サムネイル、抜粋を表示
+ * - レスポンシブグリッドレイアウト（PC: 3列、モバイル: 1列）
  * 
  * スティッキーCTA（モバイル）:
  * - 「診断する」（補助金診断ページ）
@@ -1388,6 +1390,166 @@ select {
 
 .gus-view-all-link:hover i {
     transform: translateX(3px);
+}
+
+/* 関連コラム記事セクション - PC/モバイル共通 */
+.gus-related-columns-section {
+    margin-top: var(--gus-space-2xl);
+    margin-bottom: var(--gus-space-2xl);
+}
+
+.gus-related-columns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+    .gus-related-columns-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+.gus-related-column-card {
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+}
+
+.gus-related-column-card:hover {
+    border-color: #000000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.gus-related-column-thumbnail {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 aspect ratio */
+    overflow: hidden;
+    background: #F3F4F6;
+}
+
+.gus-related-column-thumbnail a {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.gus-related-column-thumbnail img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.gus-related-column-card:hover .gus-related-column-thumbnail img {
+    transform: scale(1.05);
+}
+
+.gus-related-column-card-content {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    flex: 1;
+}
+
+.gus-related-column-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.gus-related-column-category,
+.gus-related-column-read-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #6B7280;
+}
+
+.gus-related-column-category svg,
+.gus-related-column-read-time svg {
+    flex-shrink: 0;
+}
+
+.gus-related-column-card-title {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    line-height: 1.5;
+    font-weight: 600;
+}
+
+.gus-related-column-card-title a {
+    color: #111827;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.gus-related-column-card-title a:hover {
+    color: #000000;
+}
+
+.gus-related-column-card-excerpt {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #6B7280;
+    flex: 1;
+}
+
+.gus-related-column-card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000000;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-top: auto;
+}
+
+.gus-related-column-card-link:hover {
+    gap: 10px;
+}
+
+.gus-related-column-card-link svg {
+    transition: transform 0.2s ease;
+}
+
+.gus-related-column-card-link:hover svg {
+    transform: translateX(2px);
+}
+
+.gus-related-columns-footer {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.gus-related-columns-footer .gus-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+}
+
+.gus-related-columns-footer .gus-btn:hover svg {
+    transform: translateX(4px);
 }
 
 /* 統計グリッド - スタイリッシュ */
@@ -3274,6 +3436,92 @@ select {
                         </a>
                     </article>
                     <?php endwhile; ?>
+                </div>
+            </section>
+            <?php 
+            wp_reset_postdata();
+            endif; 
+            ?>
+            
+            <!-- 関連コラム記事 - PC/モバイル共通 -->
+            <?php if ($related_columns_query && $related_columns_query->have_posts()): ?>
+            <section id="related-columns" class="gus-related-columns-section">
+                <header class="gus-related-section-header">
+                    <div class="gus-related-section-icon">📝</div>
+                    <h2 class="gus-related-section-title">詳しい記事</h2>
+                </header>
+                <div class="gus-related-columns-grid">
+                    <?php 
+                    $related_columns_query->rewind_posts();
+                    $column_display_count = 0;
+                    while ($related_columns_query->have_posts() && $column_display_count < 6) : 
+                        $related_columns_query->the_post();
+                        $column_display_count++;
+                        $column_id = get_the_ID();
+                        $read_time = get_field('estimated_read_time', $column_id);
+                        $column_categories = get_the_terms($column_id, 'column_category');
+                        $thumbnail_url = get_the_post_thumbnail_url($column_id, 'medium');
+                        $excerpt = get_the_excerpt();
+                    ?>
+                    <article class="gus-related-column-card">
+                        <?php if ($thumbnail_url): ?>
+                        <div class="gus-related-column-thumbnail">
+                            <a href="<?php the_permalink(); ?>" aria-label="<?php echo esc_attr(get_the_title() . 'を読む'); ?>">
+                                <img src="<?php echo esc_url($thumbnail_url); ?>" 
+                                     alt="<?php echo esc_attr(get_the_title()); ?>"
+                                     loading="lazy">
+                            </a>
+                        </div>
+                        <?php endif; ?>
+                        <div class="gus-related-column-card-content">
+                            <div class="gus-related-column-card-meta">
+                                <?php if ($column_categories && !is_wp_error($column_categories)): ?>
+                                <span class="gus-related-column-category">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                    </svg>
+                                    <?php echo esc_html($column_categories[0]->name); ?>
+                                </span>
+                                <?php endif; ?>
+                                <?php if ($read_time): ?>
+                                <span class="gus-related-column-read-time">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <?php echo esc_html($read_time); ?>分
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                            <h3 class="gus-related-column-card-title">
+                                <a href="<?php the_permalink(); ?>" aria-label="<?php echo esc_attr(get_the_title() . 'を読む'); ?>">
+                                    <?php the_title(); ?>
+                                </a>
+                            </h3>
+                            <?php if ($excerpt): ?>
+                            <p class="gus-related-column-card-excerpt">
+                                <?php echo wp_trim_words($excerpt, 20, '...'); ?>
+                            </p>
+                            <?php endif; ?>
+                            <a href="<?php the_permalink(); ?>" 
+                               class="gus-related-column-card-link"
+                               aria-label="<?php echo esc_attr(get_the_title() . 'の記事を読む'); ?>">
+                                記事を読む
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </article>
+                    <?php endwhile; ?>
+                </div>
+                <div class="gus-related-columns-footer">
+                    <a href="<?php echo home_url('/columns/'); ?>" class="gus-btn gus-btn-outline">
+                        すべてのコラムを見る
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
                 </div>
             </section>
             <?php 
