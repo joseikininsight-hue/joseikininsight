@@ -689,28 +689,41 @@ class JI_Affiliate_Ad_Manager {
         error_log("  Device: " . $device);
         error_log("  Category IDs: " . implode(',', $category_ids));
         
-        // カテゴリー条件を構築
-        $category_condition = '';
+        // 優先順位スコアを計算するためのCASE文を構築
+        // 優先順位: 1=カテゴリー一致, 2=ページ一致, 3=指定なし
+        $priority_score_case = "CASE ";
+        
+        // カテゴリー条件
         if (!empty($category_ids)) {
-            $category_placeholders = array();
+            $category_conditions = array();
             foreach ($category_ids as $cat_id) {
-                // 文字列として比較（例: 'grant_category_1', 'column_category_2'）
-                $category_placeholders[] = "FIND_IN_SET(%s, REPLACE(a.target_categories, ' ', '')) > 0";
+                $category_conditions[] = "FIND_IN_SET(%s, REPLACE(a.target_categories, ' ', '')) > 0";
             }
-            $category_condition = " AND (" . implode(' OR ', $category_placeholders) . " OR a.target_categories IS NULL OR a.target_categories = '')";
-        } else {
-            // カテゴリーが指定されていない場合は、カテゴリー指定なしの広告のみ
-            $category_condition = " AND (a.target_categories IS NULL OR a.target_categories = '')";
+            $category_match = "(" . implode(' OR ', $category_conditions) . ")";
+            $priority_score_case .= "WHEN {$category_match} THEN 1 ";
         }
+        
+        // ページタイプ条件
+        if (!empty($page_type)) {
+            $priority_score_case .= "WHEN FIND_IN_SET(%s, REPLACE(a.target_pages, ' ', '')) > 0 THEN 2 ";
+        }
+        
+        // 指定なし（全体表示）
+        $priority_score_case .= "WHEN (a.target_categories IS NULL OR a.target_categories = '') AND (a.target_pages IS NULL OR a.target_pages = '') THEN 3 ";
+        $priority_score_case .= "ELSE 999 END"; // マッチしない場合は除外
+        
+        // WHERE条件: priority_score が 999 でないもののみ
+        $category_condition = " AND ({$priority_score_case}) < 999";
         
         // 自動最適化が有効かチェック
         $auto_optimize = get_option('ji_affiliate_auto_optimize', '0');
         error_log("  Auto Optimize: " . $auto_optimize);
         
         if ($auto_optimize === '1') {
-            // CTR based 最適化: 過去30日のCTRでソート
+            // CTR based 最適化: 過去30日のCTRでソート + 優先順位スコア
             $base_query = "SELECT 
                     a.*,
+                    {$priority_score_case} as priority_score,
                     COALESCE(
                         (SELECT SUM(s.clicks) FROM {$this->table_name_stats} s 
                          WHERE s.ad_id = a.id 
@@ -753,32 +766,42 @@ class JI_Affiliate_Ad_Manager {
                 AND (a.end_date IS NULL OR a.end_date >= %s)
                 {$category_condition}
                 ORDER BY 
+                    priority_score ASC,
                     a.priority DESC,
                     ctr DESC,
                     RAND()
                 LIMIT 1";
             
-            $prepare_args = array_merge(
-                array($position, $device, $current_datetime, $current_datetime),
-                $category_ids
-            );
+            $prepare_args = array($position, $device, $current_datetime, $current_datetime);
+            // カテゴリーIDを追加
+            if (!empty($category_ids)) {
+                $prepare_args = array_merge($prepare_args, $category_ids);
+            }
+            // ページタイプを追加
+            if (!empty($page_type)) {
+                $prepare_args[] = $page_type;
+            }
             $query = $wpdb->prepare($base_query, $prepare_args);
         } else {
-            // 通常モード: 優先度 + ランダム
-            $base_query = "SELECT * FROM {$this->table_name_ads} a
+            // 通常モード: 優先順位スコア + 優先度 + ランダム
+            $base_query = "SELECT a.*, {$priority_score_case} as priority_score 
+                FROM {$this->table_name_ads} a
                 WHERE FIND_IN_SET(%s, REPLACE(positions, ' ', '')) > 0
                 AND status = 'active'
                 AND (device_target = 'all' OR device_target = %s)
                 AND (start_date IS NULL OR start_date <= %s)
                 AND (end_date IS NULL OR end_date >= %s)
                 {$category_condition}
-                ORDER BY priority DESC, RAND()
+                ORDER BY priority_score ASC, priority DESC, RAND()
                 LIMIT 1";
             
             $prepare_args = array_merge(
                 array($position, $device, $current_datetime, $current_datetime),
                 $category_ids
             );
+            if (!empty($page_type)) {
+                $prepare_args[] = $page_type;
+            }
             $query = $wpdb->prepare($base_query, $prepare_args);
         }
         
@@ -789,14 +812,17 @@ class JI_Affiliate_Ad_Manager {
         
         // デバッグログ: 結果を記録
         if ($ad) {
-            error_log("  ✅ Ad Found: ID=" . $ad->id . ", Title=" . $ad->title);
+            $priority_score = isset($ad->priority_score) ? $ad->priority_score : 'N/A';
+            error_log("  ✅ Ad Found: ID=" . $ad->id . ", Title=" . $ad->title . ", Priority Score=" . $priority_score);
+            error_log("     Matching Type: " . ($priority_score == 1 ? 'カテゴリー一致' : ($priority_score == 2 ? 'ページ一致' : 'デフォルト表示')));
         } else {
             error_log("  ❌ No Ad Found");
             // 該当する広告がないか確認
-            $all_ads = $wpdb->get_results("SELECT id, title, positions, status, target_categories FROM {$this->table_name_ads}");
+            $all_ads = $wpdb->get_results("SELECT id, title, positions, status, target_categories, target_pages FROM {$this->table_name_ads}");
             error_log("  Total Ads in DB: " . count($all_ads));
             foreach ($all_ads as $test_ad) {
-                error_log("    - ID:" . $test_ad->id . " Title:" . $test_ad->title . " Positions:" . $test_ad->positions . " Status:" . $test_ad->status . " Categories:" . $test_ad->target_categories);
+                error_log("    - ID:" . $test_ad->id . " Title:" . $test_ad->title . " Positions:" . $test_ad->positions . " Status:" . $test_ad->status);
+                error_log("      Categories:" . ($test_ad->target_categories ?: 'なし') . " Pages:" . ($test_ad->target_pages ?: 'なし'));
             }
         }
         
