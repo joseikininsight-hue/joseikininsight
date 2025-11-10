@@ -319,27 +319,73 @@ if (!defined('ABSPATH')) {
                 <tr>
                     <th><label for="target_categories">対象カテゴリー</label></th>
                     <td>
-                        <select name="target_categories[]" id="target_categories" multiple style="height: 200px; width: 100%;">
+                        <select name="target_categories[]" id="target_categories" multiple style="height: 250px; width: 100%;">
                             <option value="">すべてのカテゴリー</option>
+                            
                             <?php
-                            // WordPress標準カテゴリーを取得
-                            $categories = get_categories(array(
+                            // 助成金カテゴリー（grant_category）を取得
+                            $grant_categories = get_terms(array(
+                                'taxonomy' => 'grant_category',
                                 'hide_empty' => false,
                                 'orderby' => 'name',
                                 'order' => 'ASC'
                             ));
                             
-                            foreach ($categories as $category) {
-                                $indent = str_repeat('&nbsp;&nbsp;', $category->parent ? 1 : 0);
-                                echo '<option value="' . esc_attr($category->term_id) . '">' . $indent . esc_html($category->name) . ' (' . $category->count . ')</option>';
-                            }
-                            ?>
+                            if (!empty($grant_categories) && !is_wp_error($grant_categories)): ?>
+                                <optgroup label="助成金カテゴリー">
+                                <?php foreach ($grant_categories as $category): ?>
+                                    <option value="grant_category_<?php echo esc_attr($category->term_id); ?>">
+                                        <?php echo esc_html($category->name); ?> (<?php echo $category->count; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <?php
+                            // コラムカテゴリー（column_category）を取得
+                            $column_categories = get_terms(array(
+                                'taxonomy' => 'column_category',
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+                            
+                            if (!empty($column_categories) && !is_wp_error($column_categories)): ?>
+                                <optgroup label="コラムカテゴリー">
+                                <?php foreach ($column_categories as $category): ?>
+                                    <option value="column_category_<?php echo esc_attr($category->term_id); ?>">
+                                        <?php echo esc_html($category->name); ?> (<?php echo $category->count; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <?php
+                            // WordPress標準カテゴリーを取得
+                            $wp_categories = get_categories(array(
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+                            
+                            if (!empty($wp_categories) && !is_wp_error($wp_categories)): ?>
+                                <optgroup label="標準カテゴリー">
+                                <?php foreach ($wp_categories as $category): 
+                                    $indent = str_repeat('&nbsp;&nbsp;', $category->parent ? 1 : 0);
+                                ?>
+                                    <option value="category_<?php echo esc_attr($category->term_id); ?>">
+                                        <?php echo $indent . esc_html($category->name); ?> (<?php echo $category->count; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
                         </select>
                         <p class="description">
                             <strong>複数選択可能:</strong> Ctrl（Windows）/ Command（Mac）キーを押しながらクリックして複数選択できます。<br>
                             <strong>シングルページ専用:</strong> この設定はシングルページ（個別記事ページ）でのみ有効です。<br>
-                            空白（選択なし）の場合、すべてのカテゴリーの記事に表示されます。<br>
-                            特定のカテゴリーを選択すると、そのカテゴリーに属する記事でのみ広告が表示されます。
+                            <strong>助成金カテゴリー:</strong> 助成金詳細ページで表示する広告を制御します。<br>
+                            <strong>コラムカテゴリー:</strong> コラム詳細ページで表示する広告を制御します。<br>
+                            空白（選択なし）の場合、すべてのカテゴリーの記事に表示されます。
                         </p>
                     </td>
                 </tr>

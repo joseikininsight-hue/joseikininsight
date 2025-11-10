@@ -694,7 +694,8 @@ class JI_Affiliate_Ad_Manager {
         if (!empty($category_ids)) {
             $category_placeholders = array();
             foreach ($category_ids as $cat_id) {
-                $category_placeholders[] = "FIND_IN_SET(%d, REPLACE(a.target_categories, ' ', '')) > 0";
+                // 文字列として比較（例: 'grant_category_1', 'column_category_2'）
+                $category_placeholders[] = "FIND_IN_SET(%s, REPLACE(a.target_categories, ' ', '')) > 0";
             }
             $category_condition = " AND (" . implode(' OR ', $category_placeholders) . " OR a.target_categories IS NULL OR a.target_categories = '')";
         } else {
@@ -831,11 +832,23 @@ class JI_Affiliate_Ad_Manager {
         $post_id = is_object($post) ? $post->ID : 0;
         
         // カテゴリー情報を取得
-        $category_id = !empty($category_ids) ? $category_ids[0] : 0;
+        $category_id = !empty($category_ids) ? $category_ids[0] : '';
         $category_name = '';
-        if ($category_id > 0) {
-            $category = get_category($category_id);
-            $category_name = $category ? $category->name : '';
+        if (!empty($category_id)) {
+            // カテゴリーIDの形式をチェック（例: 'grant_category_1', 'column_category_2', 'category_3'）
+            if (strpos($category_id, 'grant_category_') === 0) {
+                $term_id = str_replace('grant_category_', '', $category_id);
+                $term = get_term($term_id, 'grant_category');
+                $category_name = !is_wp_error($term) && $term ? $term->name : '';
+            } elseif (strpos($category_id, 'column_category_') === 0) {
+                $term_id = str_replace('column_category_', '', $category_id);
+                $term = get_term($term_id, 'column_category');
+                $category_name = !is_wp_error($term) && $term ? $term->name : '';
+            } elseif (strpos($category_id, 'category_') === 0) {
+                $term_id = str_replace('category_', '', $category_id);
+                $category = get_category($term_id);
+                $category_name = $category ? $category->name : '';
+            }
         }
         
         ob_start();
@@ -928,11 +941,37 @@ function ji_display_ad($position, $options = array()) {
     // シングルページの場合、自動的にカテゴリーを取得
     if (is_single() && !isset($options['category_ids'])) {
         global $post;
-        $categories = get_the_category($post->ID);
         $category_ids = array();
-        foreach ($categories as $category) {
-            $category_ids[] = $category->term_id;
+        
+        // 投稿タイプを確認
+        $post_type = get_post_type($post->ID);
+        
+        if ($post_type === 'grant') {
+            // 助成金の場合: grant_category タクソノミーを取得
+            $grant_categories = wp_get_post_terms($post->ID, 'grant_category');
+            if (!empty($grant_categories) && !is_wp_error($grant_categories)) {
+                foreach ($grant_categories as $category) {
+                    $category_ids[] = 'grant_category_' . $category->term_id;
+                }
+            }
+        } elseif ($post_type === 'column') {
+            // コラムの場合: column_category タクソノミーを取得
+            $column_categories = wp_get_post_terms($post->ID, 'column_category');
+            if (!empty($column_categories) && !is_wp_error($column_categories)) {
+                foreach ($column_categories as $category) {
+                    $category_ids[] = 'column_category_' . $category->term_id;
+                }
+            }
+        } else {
+            // 標準投稿の場合: 通常のカテゴリーを取得
+            $categories = get_the_category($post->ID);
+            if (!empty($categories)) {
+                foreach ($categories as $category) {
+                    $category_ids[] = 'category_' . $category->term_id;
+                }
+            }
         }
+        
         $options['category_ids'] = $category_ids;
     }
     
