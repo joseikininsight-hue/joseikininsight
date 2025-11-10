@@ -317,6 +317,34 @@ if (!defined('ABSPATH')) {
                 </tr>
                 
                 <tr>
+                    <th><label for="target_categories">対象カテゴリー</label></th>
+                    <td>
+                        <select name="target_categories[]" id="target_categories" multiple style="height: 200px; width: 100%;">
+                            <option value="">すべてのカテゴリー</option>
+                            <?php
+                            // WordPress標準カテゴリーを取得
+                            $categories = get_categories(array(
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+                            
+                            foreach ($categories as $category) {
+                                $indent = str_repeat('&nbsp;&nbsp;', $category->parent ? 1 : 0);
+                                echo '<option value="' . esc_attr($category->term_id) . '">' . $indent . esc_html($category->name) . ' (' . $category->count . ')</option>';
+                            }
+                            ?>
+                        </select>
+                        <p class="description">
+                            <strong>複数選択可能:</strong> Ctrl（Windows）/ Command（Mac）キーを押しながらクリックして複数選択できます。<br>
+                            <strong>シングルページ専用:</strong> この設定はシングルページ（個別記事ページ）でのみ有効です。<br>
+                            空白（選択なし）の場合、すべてのカテゴリーの記事に表示されます。<br>
+                            特定のカテゴリーを選択すると、そのカテゴリーに属する記事でのみ広告が表示されます。
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
                     <th><label for="device_target">表示デバイス <span class="required">*</span></label></th>
                     <td>
                         <select name="device_target" id="device_target" required>
@@ -476,6 +504,13 @@ jQuery(document).ready(function($) {
                     $('#target_pages').val(ad.target_pages_array);
                 } else {
                     $('#target_pages').val(['']); // すべてのページ
+                }
+                
+                // 対象カテゴリー（複数選択）
+                if (ad.target_categories_array && ad.target_categories_array.length > 0) {
+                    $('#target_categories').val(ad.target_categories_array);
+                } else {
+                    $('#target_categories').val(['']); // すべてのカテゴリー
                 }
                 
                 $('#device_target').val(ad.device_target || 'all');
