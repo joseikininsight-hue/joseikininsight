@@ -4193,7 +4193,7 @@ select {
                 </div>
             </div>
             
-            <!-- ✅ 7. タグ（SEO用途・関連ページへの誘導） -->
+            <!-- ✅ 7. タグ（SEO最適化：表示件数制限） -->
             <?php if ($taxonomies['categories'] || $taxonomies['prefectures'] || $taxonomies['municipalities'] || $taxonomies['tags']): ?>
             <div class="gus-sidebar-card">
                 <h2 class="gus-sidebar-title">
@@ -4205,13 +4205,24 @@ select {
                 <div class="gus-tags-section">
                     <div class="gus-tags-label">カテゴリー</div>
                     <div class="gus-tags">
-                        <?php foreach ($taxonomies['categories'] as $cat): ?>
+                        <?php 
+                        $category_count = 0;
+                        $max_categories = 5; // SEO最適化：最大5個まで表示
+                        foreach ($taxonomies['categories'] as $cat): 
+                            if ($category_count >= $max_categories) break;
+                            $category_count++;
+                        ?>
                         <a href="<?php echo get_term_link($cat); ?>" 
                            class="gus-tag"
                            aria-label="<?php echo esc_attr($cat->name . 'カテゴリーの補助金一覧'); ?>">
                             <?php echo esc_html($cat->name); ?>
                         </a>
                         <?php endforeach; ?>
+                        <?php if (count($taxonomies['categories']) > $max_categories): ?>
+                        <span class="gus-tag-more" style="font-size: 11px; color: #666;">
+                            +<?php echo count($taxonomies['categories']) - $max_categories; ?>件
+                        </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -4220,13 +4231,24 @@ select {
                 <div class="gus-tags-section">
                     <div class="gus-tags-label">都道府県</div>
                     <div class="gus-tags">
-                        <?php foreach ($taxonomies['prefectures'] as $pref): ?>
+                        <?php 
+                        $prefecture_count = 0;
+                        $max_prefectures = 3; // SEO最適化：最大3個まで表示
+                        foreach ($taxonomies['prefectures'] as $pref): 
+                            if ($prefecture_count >= $max_prefectures) break;
+                            $prefecture_count++;
+                        ?>
                         <a href="<?php echo get_term_link($pref); ?>" 
                            class="gus-tag"
                            aria-label="<?php echo esc_attr($pref->name . 'の補助金一覧'); ?>">
                             <?php echo esc_html($pref->name); ?>
                         </a>
                         <?php endforeach; ?>
+                        <?php if (count($taxonomies['prefectures']) > $max_prefectures): ?>
+                        <span class="gus-tag-more" style="font-size: 11px; color: #666;">
+                            +<?php echo count($taxonomies['prefectures']) - $max_prefectures; ?>件
+                        </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -4235,13 +4257,24 @@ select {
                 <div class="gus-tags-section">
                     <div class="gus-tags-label">市町村</div>
                     <div class="gus-tags">
-                        <?php foreach ($taxonomies['municipalities'] as $muni): ?>
+                        <?php 
+                        $municipality_count = 0;
+                        $max_municipalities = 3; // SEO最適化：最大3個まで表示
+                        foreach ($taxonomies['municipalities'] as $muni): 
+                            if ($municipality_count >= $max_municipalities) break;
+                            $municipality_count++;
+                        ?>
                         <a href="<?php echo get_term_link($muni); ?>" 
                            class="gus-tag"
                            aria-label="<?php echo esc_attr($muni->name . 'の補助金一覧'); ?>">
                             <?php echo esc_html($muni->name); ?>
                         </a>
                         <?php endforeach; ?>
+                        <?php if (count($taxonomies['municipalities']) > $max_municipalities): ?>
+                        <span class="gus-tag-more" style="font-size: 11px; color: #666;">
+                            +<?php echo count($taxonomies['municipalities']) - $max_municipalities; ?>件
+                        </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -4250,13 +4283,24 @@ select {
                 <div class="gus-tags-section">
                     <div class="gus-tags-label">タグ</div>
                     <div class="gus-tags">
-                        <?php foreach ($taxonomies['tags'] as $tag): ?>
+                        <?php 
+                        $tag_count = 0;
+                        $max_tags = 5; // SEO最適化：最大5個まで表示
+                        foreach ($taxonomies['tags'] as $tag): 
+                            if ($tag_count >= $max_tags) break;
+                            $tag_count++;
+                        ?>
                         <a href="<?php echo get_term_link($tag); ?>" 
                            class="gus-tag"
                            aria-label="<?php echo esc_attr($tag->name . 'タグの補助金一覧'); ?>">
                             #<?php echo esc_html($tag->name); ?>
                         </a>
                         <?php endforeach; ?>
+                        <?php if (count($taxonomies['tags']) > $max_tags): ?>
+                        <span class="gus-tag-more" style="font-size: 11px; color: #666;">
+                            +<?php echo count($taxonomies['tags']) - $max_tags; ?>件
+                        </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>
