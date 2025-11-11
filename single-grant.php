@@ -56,6 +56,9 @@ if (!have_posts()) {
 get_header();
 the_post();
 
+// ✅ 投稿IDを取得（最優先）
+$post_id = get_the_ID();
+
 // ✅ SEO CRITICAL: Canonical URLを設定（重複コンテンツペナルティ防止）
 // Google推奨: 全ページに正規URLを明示し、重複コンテンツ問題を回避
 $canonical_url = get_permalink($post_id);
@@ -63,8 +66,6 @@ if (!empty($canonical_url)) {
     echo '<!-- Canonical URL: Google重複コンテンツペナルティ防止 -->' . "\n";
     echo '<link rel="canonical" href="' . esc_url($canonical_url) . '">' . "\n";
 }
-
-$post_id = get_the_ID();
 $seo_title = get_the_title();
 $current_year = date('Y');
 
