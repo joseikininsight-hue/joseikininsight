@@ -512,8 +512,20 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             
             <!-- アフィリエイト広告: サイドバー上部 -->
             <?php if (function_exists('ji_display_ad')): ?>
-                <div class="sidebar-ad-space sidebar-ad-top">
-                    <?php ji_display_ad('single_column_sidebar_top', 'single-column'); ?>
+                <div class="sidebar-card sidebar-ad-space sidebar-ad-top">
+                    <?php 
+                    // コラムカテゴリーIDを取得
+                    $column_category_ids = array();
+                    if (!empty($categories) && !is_wp_error($categories)) {
+                        foreach ($categories as $cat) {
+                            $column_category_ids[] = 'column_category_' . $cat->term_id;
+                        }
+                    }
+                    ji_display_ad('single_column_sidebar_top', array(
+                        'page_type' => 'single-column',
+                        'category_ids' => $column_category_ids
+                    )); 
+                    ?>
                 </div>
             <?php endif; ?>
 
@@ -637,8 +649,13 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
             <!-- アフィリエイト広告: サイドバー下部 -->
             <?php if (function_exists('ji_display_ad')): ?>
-                <div class="sidebar-ad-space sidebar-ad-bottom">
-                    <?php ji_display_ad('single_column_sidebar_bottom', 'single-column'); ?>
+                <div class="sidebar-card sidebar-ad-space sidebar-ad-bottom">
+                    <?php 
+                    ji_display_ad('single_column_sidebar_bottom', array(
+                        'page_type' => 'single-column',
+                        'category_ids' => $column_category_ids
+                    )); 
+                    ?>
                 </div>
             <?php endif; ?>
 
@@ -1503,6 +1520,41 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 .sidebar-card:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Affiliate Ad Space */
+.sidebar-ad-space {
+    background: #FAFAFA !important;
+    border: 2px dashed #E5E5E5 !important;
+    padding: 16px !important;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.sidebar-ad-space:hover {
+    border-color: #CCCCCC !important;
+    background: #F5F5F5 !important;
+}
+
+/* Ad Container within the ad space */
+.sidebar-ad-space .ji-affiliate-ad {
+    width: 100%;
+    display: block;
+}
+
+.sidebar-ad-space img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* When no ad is available, hide the space */
+.sidebar-ad-space:empty {
+    display: none;
 }
 
 .card-header {

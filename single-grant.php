@@ -694,6 +694,41 @@ select {
     letter-spacing: 0.5px;
 }
 
+/* Affiliate Ad Space */
+.gus-sidebar-ad-space {
+    background: #FAFAFA !important;
+    border: 2px dashed #E5E5E5 !important;
+    padding: 16px !important;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.gus-sidebar-ad-space:hover {
+    border-color: #CCCCCC !important;
+    background: #F5F5F5 !important;
+}
+
+/* Ad Container within the ad space */
+.gus-sidebar-ad-space .ji-affiliate-ad {
+    width: 100%;
+    display: block;
+}
+
+.gus-sidebar-ad-space img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* When no ad is available, hide the space */
+.gus-sidebar-ad-space:empty {
+    display: none;
+}
+
 /* ===============================================
    PC PERMANENT AI CHAT - サイドバー常時表示
    =============================================== */
@@ -3949,6 +3984,25 @@ select {
         <!-- 右サイドバー -->
         <aside class="gus-sidebar" role="complementary" aria-label="サイドバー">
             
+            <!-- ✅ 広告: サイドバー上部（最優先配置） -->
+            <?php if (function_exists('ji_display_ad')): ?>
+                <div class="gus-sidebar-card gus-sidebar-ad-space">
+                    <?php 
+                    // 補助金カテゴリーIDを取得
+                    $grant_category_ids = array();
+                    if (!empty($taxonomies['categories'])) {
+                        foreach ($taxonomies['categories'] as $cat) {
+                            $grant_category_ids[] = 'grant_category_' . $cat->term_id;
+                        }
+                    }
+                    ji_display_ad('single_grant_sidebar_top', array(
+                        'page_type' => 'single-grant',
+                        'category_ids' => $grant_category_ids
+                    )); 
+                    ?>
+                </div>
+            <?php endif; ?>
+
             <!-- ✅ 1. 統計情報（緊急性を即座に伝える）最優先配置 -->
             <!-- 統計カード（閲覧数・残日数・難易度） -->
             <div class="gus-sidebar-card">
@@ -4375,8 +4429,13 @@ select {
             
             <!-- ✅ 8. アフィリエイト広告（収益化は最後に配置） -->
             <?php if (function_exists('ji_display_ad')): ?>
-                <div class="sidebar-ad-space sidebar-ad-bottom">
-                    <?php ji_display_ad('single_grant_sidebar_bottom', 'single-grant'); ?>
+                <div class="gus-sidebar-card gus-sidebar-ad-space">
+                    <?php 
+                    ji_display_ad('single_grant_sidebar_bottom', array(
+                        'page_type' => 'single-grant',
+                        'category_ids' => $grant_category_ids
+                    )); 
+                    ?>
                 </div>
             <?php endif; ?>
             

@@ -666,7 +666,7 @@ class JI_Affiliate_Ad_Manager {
     }
     
     /**
-     * 指定位置の広告を取得（複数位置対応 + カテゴリー対応）
+     * 指定位置の広告を取得（複数位置対応 + カテゴリー対応・簡略化版）
      * 
      * @param string $position 広告位置
      * @param array $options オプション（category_ids, page_type等）
@@ -687,123 +687,56 @@ class JI_Affiliate_Ad_Manager {
         error_log("  Position: " . $position);
         error_log("  Page Type: " . $page_type);
         error_log("  Device: " . $device);
-        error_log("  Category IDs: " . implode(',', $category_ids));
+        error_log("  Category IDs: " . print_r($category_ids, true));
         
-        // 優先順位スコアを計算するためのCASE文を構築
-        // 優先順位: 1=カテゴリー一致, 2=ページ一致, 3=指定なし
-        $priority_score_case = "CASE ";
+        // ステップ1: 基本条件（位置・ステータス・デバイス・日付）で候補を絞り込む
+        $base_query = "SELECT a.* 
+            FROM {$this->table_name_ads} a
+            WHERE FIND_IN_SET(%s, REPLACE(a.positions, ' ', '')) > 0
+            AND a.status = 'active'
+            AND (a.device_target = 'all' OR a.device_target = %s)
+            AND (a.start_date IS NULL OR a.start_date <= %s)
+            AND (a.end_date IS NULL OR a.end_date >= %s)";
         
-        // カテゴリー条件
-        if (!empty($category_ids)) {
-            $category_conditions = array();
+        $prepare_args = array($position, $device, $current_datetime, $current_datetime);
+        
+        // ステップ2: カテゴリーまたはページ条件でフィルタリング（OR条件）
+        $has_filter = false;
+        $filter_parts = array();
+        
+        // カテゴリーフィルター
+        if (!empty($category_ids) && is_array($category_ids)) {
+            $category_placeholders = array();
             foreach ($category_ids as $cat_id) {
-                $category_conditions[] = "FIND_IN_SET(%s, REPLACE(a.target_categories, ' ', '')) > 0";
+                $category_placeholders[] = "FIND_IN_SET(%s, REPLACE(a.target_categories, ' ', '')) > 0";
+                $prepare_args[] = $cat_id;
             }
-            $category_match = "(" . implode(' OR ', $category_conditions) . ")";
-            $priority_score_case .= "WHEN {$category_match} THEN 1 ";
+            if (!empty($category_placeholders)) {
+                $filter_parts[] = "(" . implode(' OR ', $category_placeholders) . ")";
+                $has_filter = true;
+            }
         }
         
-        // ページタイプ条件
+        // ページタイプフィルター
         if (!empty($page_type)) {
-            $priority_score_case .= "WHEN FIND_IN_SET(%s, REPLACE(a.target_pages, ' ', '')) > 0 THEN 2 ";
+            $filter_parts[] = "FIND_IN_SET(%s, REPLACE(a.target_pages, ' ', '')) > 0";
+            $prepare_args[] = $page_type;
+            $has_filter = true;
         }
         
-        // 指定なし（全体表示）
-        $priority_score_case .= "WHEN (a.target_categories IS NULL OR a.target_categories = '') AND (a.target_pages IS NULL OR a.target_pages = '') THEN 3 ";
-        $priority_score_case .= "ELSE 999 END"; // マッチしない場合は除外
+        // フィルター条件なしの広告も含める（全体表示用）
+        $filter_parts[] = "(a.target_categories IS NULL OR a.target_categories = '') AND (a.target_pages IS NULL OR a.target_pages = '')";
         
-        // WHERE条件: priority_score が 999 でないもののみ
-        $category_condition = " AND ({$priority_score_case}) < 999";
-        
-        // 自動最適化が有効かチェック
-        $auto_optimize = get_option('ji_affiliate_auto_optimize', '0');
-        error_log("  Auto Optimize: " . $auto_optimize);
-        
-        if ($auto_optimize === '1') {
-            // CTR based 最適化: 過去30日のCTRでソート + 優先順位スコア
-            $base_query = "SELECT 
-                    a.*,
-                    {$priority_score_case} as priority_score,
-                    COALESCE(
-                        (SELECT SUM(s.clicks) FROM {$this->table_name_stats} s 
-                         WHERE s.ad_id = a.id 
-                         AND s.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                        ), 0
-                    ) as total_clicks,
-                    COALESCE(
-                        (SELECT SUM(s.impressions) FROM {$this->table_name_stats} s 
-                         WHERE s.ad_id = a.id 
-                         AND s.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                        ), 0
-                    ) as total_impressions,
-                    CASE 
-                        WHEN COALESCE(
-                            (SELECT SUM(s.impressions) FROM {$this->table_name_stats} s 
-                             WHERE s.ad_id = a.id 
-                             AND s.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                            ), 0
-                        ) > 0 
-                        THEN (
-                            COALESCE(
-                                (SELECT SUM(s.clicks) FROM {$this->table_name_stats} s 
-                                 WHERE s.ad_id = a.id 
-                                 AND s.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                                ), 0
-                            ) / COALESCE(
-                                (SELECT SUM(s.impressions) FROM {$this->table_name_stats} s 
-                                 WHERE s.ad_id = a.id 
-                                 AND s.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                                ), 0
-                            )
-                        ) * 100
-                        ELSE 0
-                    END as ctr
-                FROM {$this->table_name_ads} a
-                WHERE FIND_IN_SET(%s, REPLACE(a.positions, ' ', '')) > 0
-                AND a.status = 'active'
-                AND (a.device_target = 'all' OR a.device_target = %s)
-                AND (a.start_date IS NULL OR a.start_date <= %s)
-                AND (a.end_date IS NULL OR a.end_date >= %s)
-                {$category_condition}
-                ORDER BY 
-                    priority_score ASC,
-                    a.priority DESC,
-                    ctr DESC,
-                    RAND()
-                LIMIT 1";
-            
-            $prepare_args = array($position, $device, $current_datetime, $current_datetime);
-            // カテゴリーIDを追加
-            if (!empty($category_ids)) {
-                $prepare_args = array_merge($prepare_args, $category_ids);
-            }
-            // ページタイプを追加
-            if (!empty($page_type)) {
-                $prepare_args[] = $page_type;
-            }
-            $query = $wpdb->prepare($base_query, $prepare_args);
-        } else {
-            // 通常モード: 優先順位スコア + 優先度 + ランダム
-            $base_query = "SELECT a.*, {$priority_score_case} as priority_score 
-                FROM {$this->table_name_ads} a
-                WHERE FIND_IN_SET(%s, REPLACE(positions, ' ', '')) > 0
-                AND status = 'active'
-                AND (device_target = 'all' OR device_target = %s)
-                AND (start_date IS NULL OR start_date <= %s)
-                AND (end_date IS NULL OR end_date >= %s)
-                {$category_condition}
-                ORDER BY priority_score ASC, priority DESC, RAND()
-                LIMIT 1";
-            
-            $prepare_args = array_merge(
-                array($position, $device, $current_datetime, $current_datetime),
-                $category_ids
-            );
-            if (!empty($page_type)) {
-                $prepare_args[] = $page_type;
-            }
-            $query = $wpdb->prepare($base_query, $prepare_args);
+        // OR条件を追加
+        if (!empty($filter_parts)) {
+            $base_query .= " AND (" . implode(' OR ', $filter_parts) . ")";
         }
+        
+        // ステップ3: 並び順（優先度 > ランダム）
+        $base_query .= " ORDER BY a.priority DESC, RAND() LIMIT 1";
+        
+        // クエリ実行
+        $query = $wpdb->prepare($base_query, $prepare_args);
         
         // デバッグログ: クエリを記録
         error_log("  Query: " . $query);
@@ -812,17 +745,20 @@ class JI_Affiliate_Ad_Manager {
         
         // デバッグログ: 結果を記録
         if ($ad) {
-            $priority_score = isset($ad->priority_score) ? $ad->priority_score : 'N/A';
-            error_log("  ✅ Ad Found: ID=" . $ad->id . ", Title=" . $ad->title . ", Priority Score=" . $priority_score);
-            error_log("     Matching Type: " . ($priority_score == 1 ? 'カテゴリー一致' : ($priority_score == 2 ? 'ページ一致' : 'デフォルト表示')));
+            error_log("  ✅ Ad Found: ID=" . $ad->id . ", Title=" . $ad->title);
+            error_log("     Target Categories: " . ($ad->target_categories ?: 'なし'));
+            error_log("     Target Pages: " . ($ad->target_pages ?: 'なし'));
         } else {
             error_log("  ❌ No Ad Found");
             // 該当する広告がないか確認
-            $all_ads = $wpdb->get_results("SELECT id, title, positions, status, target_categories, target_pages FROM {$this->table_name_ads}");
-            error_log("  Total Ads in DB: " . count($all_ads));
+            $all_ads = $wpdb->get_results("SELECT id, title, positions, status, target_categories, target_pages, device_target FROM {$this->table_name_ads} WHERE status = 'active'");
+            error_log("  Total Active Ads in DB: " . count($all_ads));
             foreach ($all_ads as $test_ad) {
-                error_log("    - ID:" . $test_ad->id . " Title:" . $test_ad->title . " Positions:" . $test_ad->positions . " Status:" . $test_ad->status);
-                error_log("      Categories:" . ($test_ad->target_categories ?: 'なし') . " Pages:" . ($test_ad->target_pages ?: 'なし'));
+                error_log("    - ID:" . $test_ad->id . " Title:" . $test_ad->title);
+                error_log("      Positions:" . $test_ad->positions);
+                error_log("      Device:" . $test_ad->device_target);
+                error_log("      Categories:" . ($test_ad->target_categories ?: 'なし'));
+                error_log("      Pages:" . ($test_ad->target_pages ?: 'なし'));
             }
         }
         
