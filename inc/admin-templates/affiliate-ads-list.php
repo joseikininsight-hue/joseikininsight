@@ -317,6 +317,80 @@ if (!defined('ABSPATH')) {
                 </tr>
                 
                 <tr>
+                    <th><label for="target_categories">対象カテゴリー</label></th>
+                    <td>
+                        <select name="target_categories[]" id="target_categories" multiple style="height: 250px; width: 100%;">
+                            <option value="">すべてのカテゴリー</option>
+                            
+                            <?php
+                            // 助成金カテゴリー（grant_category）を取得
+                            $grant_categories = get_terms(array(
+                                'taxonomy' => 'grant_category',
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+                            
+                            if (!empty($grant_categories) && !is_wp_error($grant_categories)): ?>
+                                <optgroup label="助成金カテゴリー">
+                                <?php foreach ($grant_categories as $category): ?>
+                                    <option value="grant_category_<?php echo esc_attr($category->term_id); ?>">
+                                        <?php echo esc_html($category->name); ?> (<?php echo $category->count; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <?php
+                            // コラムカテゴリー（column_category）を取得
+                            $column_categories = get_terms(array(
+                                'taxonomy' => 'column_category',
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+                            
+                            if (!empty($column_categories) && !is_wp_error($column_categories)): ?>
+                                <optgroup label="コラムカテゴリー">
+                                <?php foreach ($column_categories as $category): ?>
+                                    <option value="column_category_<?php echo esc_attr($category->term_id); ?>">
+                                        <?php echo esc_html($category->name); ?> (<?php echo $category->count; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <?php
+                            // WordPress標準カテゴリーを取得
+                            $wp_categories = get_categories(array(
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+                            
+                            if (!empty($wp_categories) && !is_wp_error($wp_categories)): ?>
+                                <optgroup label="標準カテゴリー">
+                                <?php foreach ($wp_categories as $category): 
+                                    $indent = str_repeat('&nbsp;&nbsp;', $category->parent ? 1 : 0);
+                                ?>
+                                    <option value="category_<?php echo esc_attr($category->term_id); ?>">
+                                        <?php echo $indent . esc_html($category->name); ?> (<?php echo $category->count; ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                        </select>
+                        <p class="description">
+                            <strong>複数選択可能:</strong> Ctrl（Windows）/ Command（Mac）キーを押しながらクリックして複数選択できます。<br>
+                            <strong>シングルページ専用:</strong> この設定はシングルページ（個別記事ページ）でのみ有効です。<br>
+                            <strong>助成金カテゴリー:</strong> 助成金詳細ページで表示する広告を制御します。<br>
+                            <strong>コラムカテゴリー:</strong> コラム詳細ページで表示する広告を制御します。<br>
+                            空白（選択なし）の場合、すべてのカテゴリーの記事に表示されます。
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
                     <th><label for="device_target">表示デバイス <span class="required">*</span></label></th>
                     <td>
                         <select name="device_target" id="device_target" required>
@@ -476,6 +550,13 @@ jQuery(document).ready(function($) {
                     $('#target_pages').val(ad.target_pages_array);
                 } else {
                     $('#target_pages').val(['']); // すべてのページ
+                }
+                
+                // 対象カテゴリー（複数選択）
+                if (ad.target_categories_array && ad.target_categories_array.length > 0) {
+                    $('#target_categories').val(ad.target_categories_array);
+                } else {
+                    $('#target_categories').val(['']); // すべてのカテゴリー
                 }
                 
                 $('#device_target').val(ad.device_target || 'all');

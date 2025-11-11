@@ -3,8 +3,13 @@
  * 全JSを統合・最適化したメインスクリプト
  * 重複削除、パフォーマンス最適化済み
  * 
- * @version 1.0.0
- * @date 2025-10-05
+ * @version 1.1.0
+ * @date 2025-11-08
+ * 
+ * CHANGELOG v1.1.0:
+ * - Disabled mobile header creation (removed annoying "助成金検索" text)
+ * - Removed redundant mobile search box
+ * - Use existing WordPress header instead
  */
 
 /**
@@ -15,7 +20,7 @@
  */
 const GrantInsight = {
     // バージョン情報
-    version: '1.0.0',
+    version: '1.1.0',
     
     // 設定オブジェクト
     config: {
@@ -757,61 +762,23 @@ cacheElements() {
     },
 
     /**
-     * モバイルヘッダーのセットアップ
+     * モバイルヘッダーのセットアップ - DISABLED
+     * 不要なため無効化 (邪魔な「助成金検索」テキストを削除)
      */
     setupMobileHeader() {
-        if (!this.elements.header && window.innerWidth <= 768) {
-            this.elements.header = this.createMobileHeader();
-        }
-        
-        if (this.elements.header) {
-            this.state.headerHeight = this.elements.header.offsetHeight;
-            
-            // スマートヘッダー表示/非表示
-            const scrollHandler = this.throttle(() => {
-                const currentScrollY = window.scrollY;
-                const scrollDelta = Math.abs(currentScrollY - this.state.lastScrollY);
-                
-                if (scrollDelta < 10) return;
-                
-                if (currentScrollY > this.state.lastScrollY && currentScrollY > this.state.headerHeight) {
-                    this.elements.header.classList.add('gi-header-hidden');
-                } else {
-                    this.elements.header.classList.remove('gi-header-hidden');
-                }
-                
-                this.state.lastScrollY = currentScrollY;
-            }, 10);
-            
-            window.addEventListener('scroll', scrollHandler, { passive: true });
-        }
+        // モバイルヘッダーの作成を完全に無効化
+        // 既存のWordPressヘッダーを使用
+        return;
     },
 
     /**
-     * モバイルヘッダーの作成
+     * モバイルヘッダーの作成 - DISABLED
+     * 不要なため無効化 (邪魔な「助成金検索」テキストと検索ボックスを削除)
      */
     createMobileHeader() {
-        const header = document.createElement('div');
-        header.className = 'gi-mobile-header';
-        header.innerHTML = `
-            <div class="gi-mobile-header-content">
-                <a href="/" class="gi-logo-mobile">助成金検索</a>
-                <div class="gi-search-container-mobile">
-                    <input type="text" class="gi-search-input" placeholder="助成金を検索...">
-                </div>
-            </div>
-        `;
-        
-        document.body.insertBefore(header, document.body.firstChild);
-        
-        // 新しい検索入力を要素キャッシュに追加
-        const newSearchInput = header.querySelector('.gi-search-input');
-        if (newSearchInput) {
-            // 既存の検索設定を適用
-            this.setupSearchForElement(newSearchInput);
-        }
-        
-        return header;
+        // この機能は完全に無効化されました
+        // 理由: 青い「助成金検索」テキストと検索ボックスが邪魔で不要
+        return null;
     },
 
     /**
