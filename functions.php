@@ -448,7 +448,14 @@ function gi_remove_duplicate_acf_content($content) {
 }
 
 // Add filter with high priority to run early
-add_filter('the_content', 'gi_remove_duplicate_acf_content', 5);
+// DISABLED: 2025-11-11 - この処理が訪問者の即時離脱（エンゲージメント率47.8%）の原因
+// 理由: サーバー側で重要コンテンツ（対象者、必要書類等）を削除することで、
+//      1. Googleがコンテンツを正しく評価できない（PC順位24位の原因）
+//      2. ユーザーが見るべき情報が消える（即時離脱の原因）
+//      3. single-grant.phpのJavaScript削除と合わせて「二重削除」となり、
+//         ページが一瞬点滅する現象を引き起こす
+// 根本修正: WordPress編集画面でコンテンツを適切に管理し、削除処理に依存しない構造へ
+// add_filter('the_content', 'gi_remove_duplicate_acf_content', 5);
 
 /**
  * Enqueue Column System CSS and JavaScript

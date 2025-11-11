@@ -4252,8 +4252,16 @@ select {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ========================================
-    // 重複コンテンツの削除
+    // 重複コンテンツの削除 - DISABLED
     // ========================================
+    // DISABLED: 2025-11-11 - この処理が訪問者の即時離脱（エンゲージメント率47.8%）の原因
+    // 理由: ブラウザ側で重要コンテンツ（対象者、必要書類等）を削除することで、
+    //      1. ページが一瞬点滅する現象（コンテンツが表示されてから消える）
+    //      2. 訪問者が「読もうとした情報が目の前で消えた」と感じ即座に離脱
+    //      3. functions.phpのサーバー側削除と合わせて「二重削除」
+    //      4. 検索流入の52.2%が10秒以内に離脱する低いエンゲージメント率の根本原因
+    // 根本修正: WordPress編集画面でコンテンツを適切に管理し、削除処理に依存しない構造へ
+    /*
     const contentWrapper = document.querySelector('.gus-content-wrapper');
     if (contentWrapper) {
         const duplicatePatterns = [
@@ -4277,6 +4285,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const emptyDivs = contentWrapper.querySelectorAll('div:empty');
         emptyDivs.forEach(div => div.remove());
     }
+    */
     
     // ========================================
     // PC常時表示AIチャット機能
