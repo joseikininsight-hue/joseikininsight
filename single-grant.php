@@ -75,6 +75,16 @@ $grant_data = array(
     'is_featured' => function_exists('get_field') ? get_field('is_featured', $post_id) : false,
     'views_count' => function_exists('get_field') ? intval(get_field('views_count', $post_id)) : 0,
     'ai_summary' => function_exists('get_field') ? get_field('ai_summary', $post_id) : '',
+    
+    // 追加フィールド（未使用だったフィールド）
+    'eligible_expenses' => function_exists('get_field') ? get_field('eligible_expenses', $post_id) : '',
+    'eligible_expenses_detailed' => function_exists('get_field') ? get_field('eligible_expenses_detailed', $post_id) : '',
+    'required_documents_detailed' => function_exists('get_field') ? get_field('required_documents_detailed', $post_id) : '',
+    'subsidy_rate_detailed' => function_exists('get_field') ? get_field('subsidy_rate_detailed', $post_id) : '',
+    'application_method' => function_exists('get_field') ? get_field('application_method', $post_id) : '',
+    'application_period' => function_exists('get_field') ? get_field('application_period', $post_id) : '',
+    'area_notes' => function_exists('get_field') ? get_field('area_notes', $post_id) : '',
+    'difficulty_level' => function_exists('get_field') ? get_field('difficulty_level', $post_id) : '',
 );
 
 // タクソノミー取得
@@ -350,13 +360,33 @@ select {
           }
         }<?php if ($grant_data['required_documents']): ?>,<?php endif; ?>
         <?php endif; ?>
-        <?php if ($grant_data['required_documents']): ?>
+        <?php 
+        $documents_for_schema = !empty($grant_data['required_documents_detailed']) 
+            ? $grant_data['required_documents_detailed'] 
+            : $grant_data['required_documents'];
+        if ($documents_for_schema): 
+        ?>
         {
           "@type": "Question",
           "name": "申請に必要な書類は何ですか？",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": <?php echo json_encode(wp_strip_all_tags($grant_data['required_documents'])); ?>
+            "text": <?php echo json_encode(wp_strip_all_tags($documents_for_schema)); ?>
+          }
+        },
+        <?php endif; ?>
+        <?php 
+        $expenses_for_schema = !empty($grant_data['eligible_expenses_detailed']) 
+            ? $grant_data['eligible_expenses_detailed'] 
+            : $grant_data['eligible_expenses'];
+        if ($expenses_for_schema): 
+        ?>
+        {
+          "@type": "Question",
+          "name": "どのような経費が対象になりますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": <?php echo json_encode(wp_strip_all_tags($expenses_for_schema)); ?>
           }
         },
         <?php endif; ?>
@@ -3210,10 +3240,24 @@ select {
                             </tr>
                             <?php endif; ?>
                             
+                            <?php if ($grant_data['application_period']): ?>
+                            <tr>
+                                <th>申請期間</th>
+                                <td><?php echo esc_html($grant_data['application_period']); ?></td>
+                            </tr>
+                            <?php endif; ?>
+                            
                             <?php if ($grant_data['subsidy_rate']): ?>
                             <tr>
                                 <th>補助率</th>
                                 <td><?php echo esc_html($grant_data['subsidy_rate']); ?></td>
+                            </tr>
+                            <?php endif; ?>
+                            
+                            <?php if ($grant_data['subsidy_rate_detailed']): ?>
+                            <tr>
+                                <th>補助率詳細</th>
+                                <td><?php echo esc_html($grant_data['subsidy_rate_detailed']); ?></td>
                             </tr>
                             <?php endif; ?>
                             
@@ -3228,6 +3272,9 @@ select {
                                             <?php endfor; ?>
                                         </div>
                                         <span style="font-size: var(--gus-text-sm); color: var(--gus-gray-600);">(<?php echo $difficulty_data['description']; ?>)</span>
+                                        <?php if ($grant_data['difficulty_level']): ?>
+                                        <br><small style="color: var(--gus-gray-500);">レベル: <?php echo esc_html($grant_data['difficulty_level']); ?></small>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -3262,14 +3309,92 @@ select {
             <?php endif; ?>
             
             <!-- 必要書類 -->
-            <?php if ($grant_data['required_documents']): ?>
+            <?php 
+            // 詳細版がある場合は詳細版を優先表示
+            $documents_content = !empty($grant_data['required_documents_detailed']) 
+                ? $grant_data['required_documents_detailed'] 
+                : $grant_data['required_documents'];
+            
+            if ($documents_content): 
+            ?>
             <section id="documents" class="gus-section gus-modern-section">
                 <header class="gus-modern-header">
                     <div class="gus-modern-icon">■</div>
                     <h2 class="gus-modern-title">必要書類</h2>
                 </header>
                 <div class="gus-modern-content">
-                    <?php echo wp_kses_post($grant_data['required_documents']); ?>
+                    <?php echo wp_kses_post($documents_content); ?>
+                </div>
+            </section>
+            <?php endif; ?>
+            
+            <!-- 対象経費 -->
+            <?php 
+            // 詳細版がある場合は詳細版を優先表示
+            $expenses_content = !empty($grant_data['eligible_expenses_detailed']) 
+                ? $grant_data['eligible_expenses_detailed'] 
+                : $grant_data['eligible_expenses'];
+            
+            if ($expenses_content): 
+            ?>
+            <section id="expenses" class="gus-section gus-modern-section">
+                <header class="gus-modern-header">
+                    <div class="gus-modern-icon">■</div>
+                    <h2 class="gus-modern-title">対象経費</h2>
+                </header>
+                <div class="gus-modern-content">
+                    <?php echo wp_kses_post($expenses_content); ?>
+                </div>
+            </section>
+            <?php endif; ?>
+            
+            <!-- 補助率・補助額 -->
+            <?php if ($grant_data['subsidy_rate_detailed']): ?>
+            <section id="subsidy-rate" class="gus-section gus-modern-section">
+                <header class="gus-modern-header">
+                    <div class="gus-modern-icon">■</div>
+                    <h2 class="gus-modern-title">補助率・補助額</h2>
+                </header>
+                <div class="gus-modern-content">
+                    <?php echo wp_kses_post($grant_data['subsidy_rate_detailed']); ?>
+                </div>
+            </section>
+            <?php endif; ?>
+            
+            <!-- 申請方法 -->
+            <?php if ($grant_data['application_method']): ?>
+            <section id="application-method" class="gus-section gus-modern-section">
+                <header class="gus-modern-header">
+                    <div class="gus-modern-icon">■</div>
+                    <h2 class="gus-modern-title">申請方法</h2>
+                </header>
+                <div class="gus-modern-content">
+                    <p>
+                        <?php 
+                        $method_labels = array(
+                            'online' => 'オンライン申請',
+                            'mail' => '郵送申請',
+                            'visit' => '窓口申請',
+                            'mixed' => 'オンライン・郵送併用'
+                        );
+                        echo isset($method_labels[$grant_data['application_method']]) 
+                            ? $method_labels[$grant_data['application_method']] 
+                            : esc_html($grant_data['application_method']);
+                        ?>
+                    </p>
+                </div>
+            </section>
+            <?php endif; ?>
+            
+            <!-- 地域制限に関する備考 -->
+            <?php if ($grant_data['area_notes']): ?>
+            <section id="area-notes" class="gus-section gus-modern-section">
+                <header class="gus-modern-header">
+                    <div class="gus-modern-icon">■</div>
+                    <h2 class="gus-modern-title">地域に関する備考</h2>
+                </header>
+                <div class="gus-modern-content">
+                    <?php echo wp_kses_post(nl2br($grant_data['area_notes'])); ?>
                 </div>
             </section>
             <?php endif; ?>
@@ -3334,11 +3459,51 @@ select {
                         </details>
                         <?php endif; ?>
                         
-                        <?php if ($grant_data['required_documents']): ?>
+                        <?php 
+                        $documents_display = !empty($grant_data['required_documents_detailed']) 
+                            ? $grant_data['required_documents_detailed'] 
+                            : $grant_data['required_documents'];
+                        if ($documents_display): 
+                        ?>
                         <details class="gus-faq-item">
                             <summary class="gus-faq-question" role="button" aria-expanded="false" tabindex="0">申請に必要な書類は何ですか？</summary>
                             <div class="gus-faq-answer" role="region">
-                                <?php echo wp_kses_post($grant_data['required_documents']); ?>
+                                <?php echo wp_kses_post($documents_display); ?>
+                            </div>
+                        </details>
+                        <?php endif; ?>
+                        
+                        <?php 
+                        $expenses_display = !empty($grant_data['eligible_expenses_detailed']) 
+                            ? $grant_data['eligible_expenses_detailed'] 
+                            : $grant_data['eligible_expenses'];
+                        if ($expenses_display): 
+                        ?>
+                        <details class="gus-faq-item">
+                            <summary class="gus-faq-question" role="button" aria-expanded="false" tabindex="0">どのような経費が対象になりますか？</summary>
+                            <div class="gus-faq-answer" role="region">
+                                <?php echo wp_kses_post($expenses_display); ?>
+                            </div>
+                        </details>
+                        <?php endif; ?>
+                        
+                        <?php if ($grant_data['application_method']): ?>
+                        <details class="gus-faq-item">
+                            <summary class="gus-faq-question" role="button" aria-expanded="false" tabindex="0">どのように申請すればよいですか？</summary>
+                            <div class="gus-faq-answer" role="region">
+                                <p>
+                                    <?php 
+                                    $method_labels = array(
+                                        'online' => 'オンライン申請システムからお申し込みください。',
+                                        'mail' => '必要書類を郵送でご提出ください。',
+                                        'visit' => '担当窓口にて直接お申し込みください。',
+                                        'mixed' => 'オンラインまたは郵送のいずれかの方法でお申し込みいただけます。'
+                                    );
+                                    echo isset($method_labels[$grant_data['application_method']]) 
+                                        ? $method_labels[$grant_data['application_method']] 
+                                        : esc_html($grant_data['application_method']);
+                                    ?>
+                                </p>
                             </div>
                         </details>
                         <?php endif; ?>
@@ -3795,9 +3960,29 @@ select {
                         <a href="#target" class="gus-toc-link">対象者・対象事業</a>
                     </li>
                     <?php endif; ?>
-                    <?php if ($grant_data['required_documents']): ?>
+                    <?php if ($grant_data['required_documents'] || $grant_data['required_documents_detailed']): ?>
                     <li class="gus-toc-item">
                         <a href="#documents" class="gus-toc-link">必要書類</a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if ($grant_data['eligible_expenses'] || $grant_data['eligible_expenses_detailed']): ?>
+                    <li class="gus-toc-item">
+                        <a href="#expenses" class="gus-toc-link">対象経費</a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if ($grant_data['subsidy_rate_detailed']): ?>
+                    <li class="gus-toc-item">
+                        <a href="#subsidy-rate" class="gus-toc-link">補助率・補助額</a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if ($grant_data['application_method']): ?>
+                    <li class="gus-toc-item">
+                        <a href="#application-method" class="gus-toc-link">申請方法</a>
+                    </li>
+                    <?php endif; ?>
+                    <?php if ($grant_data['area_notes']): ?>
+                    <li class="gus-toc-item">
+                        <a href="#area-notes" class="gus-toc-link">地域に関する備考</a>
                     </li>
                     <?php endif; ?>
                     <li class="gus-toc-item">
