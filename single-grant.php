@@ -3,25 +3,28 @@
  * Grant Single Page - Complete SEO & UX Optimized v19.2 CONTENT FLOW OPTIMIZATION
  * 補助金詳細ページ - 完全版（PC常時AIチャット・モバイルボタン式・SEO完璧対応）
  * 
- * サイドバー順序（UX最適化 v18.0 - 完璧な構成）:
- * - アクション（AI無料診断→補助金検索→公式サイト→印刷）- コンバージョン優先順
- * - 目次
- * - 統計情報（閲覧数・残日数・難易度）- ユーザー行動決定要因
- * - アフィリエイト広告（中央）
- * - 関連補助金
- * - AIチャット（サポート機能として下部に配置）
- * - タグ
+ * サイドバー順序（UX最適化 v19.3 - 訪問者意図優先）:
+ * 1. 統計情報（残日数・難易度・閲覧数）← 緊急性を即座に伝える【最優先】
+ * 2. 目次 ← ページ内情報構造を把握
+ * 3. 関連補助金 ← 代替案を素早く提示
+ * 4. 関連コラム ← 詳しい情報への誘導
+ * 5. アクション（AI診断・補助金検索・公式サイト・印刷）← 情報を得た後に行動促進
+ * 6. AIチャット ← サポートツールとして配置
+ * 7. タグ ← SEO用途・関連ページ誘導
+ * 8. アフィリエイト広告 ← 収益化は最後【ユーザー体験優先】
  * 
- * アクションボタン優先順位（v18.0完璧）:
- * 1. AI無料診断（Primary）- 最優先コンバージョン（緑色）
+ * アクションボタン優先順位（v19.3訪問者意図重視）:
+ * ※情報を十分に得た後に配置（統計・目次・関連補助金の後）
+ * 1. AI無料診断（Primary）- コンバージョン（緑色）
  * 2. 他の補助金を探す（Secondary）- サイト内回遊促進
  * 3. 公式サイト（Secondary）- 外部リンク
  * 4. 印刷（Secondary）- ユーティリティ
  * 
- * 統計情報カード（v18.0新規追加）:
+ * 統計情報カード（v19.3最優先配置）:
+ * - サイドバー最上部に配置 ← 訪問者の行動決定を即座にサポート
+ * - 残日数: 緊急性を色分け表示（赤: 7日以内、黄: 30日以内、緑: 30日超）
+ * - 難易度: 申請難易度（3段階ドット表示）
  * - 閲覧数: サイト人気度の指標
- * - 残日数: 最重要な行動決定要因（色分け表示）
- * - 難易度: 申請の難易度（3段階ドット表示）
  * 
  * 双方向リンク機能（v19.0 → v19.2コンテンツフロー最適化）:
  * - コラムから補助金への紐付け: 既存のACF「related_grants」フィールド使用
@@ -3880,64 +3883,44 @@ select {
         <!-- 右サイドバー -->
         <aside class="gus-sidebar" role="complementary" aria-label="サイドバー">
             
-            <!-- アフィリエイト広告: サイドバー上部 -->
-            <?php if (function_exists('ji_display_ad')): ?>
-                <div class="sidebar-ad-space sidebar-ad-top">
-                    <?php ji_display_ad('single_grant_sidebar_top', 'single-grant'); ?>
-                </div>
-            <?php endif; ?>
-            
-            <!-- アクション（UX優先：コンバージョン重視） -->
+            <!-- ✅ 1. 統計情報（緊急性を即座に伝える）最優先配置 -->
+            <!-- 統計カード（閲覧数・残日数・難易度） -->
             <div class="gus-sidebar-card">
                 <h2 class="gus-sidebar-title">
-                    <span class="gus-icon gus-icon-link"></span>
-                    アクション
+                    <span class="gus-icon gus-icon-chart"></span>
+                    統計情報
                 </h2>
-                <div class="gus-actions">
-                    <!-- 最優先：AI診断 -->
-                    <a href="<?php echo home_url('/subsidy-diagnosis/'); ?>" 
-                       class="gus-btn gus-btn-primary"
-                       aria-label="AIで最適な補助金を診断">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
-                            <path d="M9 11l3 3L22 4"/>
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                        </svg>
-                        AI無料診断
-                    </a>
+                <div class="gus-stats-grid">
+                    <!-- 閲覧数 -->
+                    <div class="gus-stat-item">
+                        <div class="gus-stat-label">閲覧数</div>
+                        <div class="gus-stat-value"><?php echo number_format($grant_data['views_count']); ?></div>
+                    </div>
                     
-                    <!-- 第2優先：補助金一覧 -->
-                    <a href="<?php echo home_url('/grants/'); ?>" 
-                       class="gus-btn gus-btn-secondary"
-                       aria-label="他の補助金を探す">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="m21 21-4.35-4.35"/>
-                        </svg>
-                        他の補助金を探す
-                    </a>
-                    
-                    <!-- 第3優先：公式サイト -->
-                    <?php if ($grant_data['official_url']): ?>
-                    <a href="<?php echo esc_url($grant_data['official_url']); ?>" 
-                       class="gus-btn gus-btn-secondary" 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       aria-label="公式サイトで詳細を確認">
-                        <span class="gus-icon gus-icon-link"></span>
-                        公式サイト
-                    </a>
+                    <!-- 残日数 -->
+                    <?php if (!empty($deadline_info) && isset($days_remaining) && $days_remaining > 0): ?>
+                    <div class="gus-stat-item <?php echo esc_attr($deadline_class); ?>">
+                        <div class="gus-stat-label">残日数</div>
+                        <div class="gus-stat-value" style="color: <?php echo $days_remaining <= 7 ? '#DC2626' : ($days_remaining <= 30 ? '#F59E0B' : '#10B981'); ?>">
+                            <?php echo $days_remaining; ?>日
+                        </div>
+                    </div>
                     <?php endif; ?>
                     
-                    <!-- その他：印刷 -->
-                    <button class="gus-btn gus-btn-secondary" 
-                            onclick="window.print()"
-                            aria-label="このページを印刷">
-                        印刷
-                    </button>
+                    <!-- 難易度 -->
+                    <div class="gus-stat-item">
+                        <div class="gus-stat-label">難易度</div>
+                        <div class="gus-stat-value">
+                            <?php echo str_repeat('●', $difficulty_data['dots']) . str_repeat('○', 3 - $difficulty_data['dots']); ?>
+                        </div>
+                        <div style="font-size: 10px; color: #666; margin-top: 4px;">
+                            <?php echo esc_html($difficulty_data['description']); ?>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- 目次 -->
+            <!-- ✅ 2. 目次（ページ内情報構造を把握） -->
             <nav class="gus-sidebar-card" aria-label="目次">
                 <h2 class="gus-sidebar-title">
                     <span class="gus-icon gus-icon-list"></span>
@@ -4002,50 +3985,7 @@ select {
                 </ul>
             </nav>
             
-            <!-- 統計カード（閲覧数・残日数・難易度） -->
-            <div class="gus-sidebar-card">
-                <h2 class="gus-sidebar-title">
-                    <span class="gus-icon gus-icon-chart"></span>
-                    統計情報
-                </h2>
-                <div class="gus-stats-grid">
-                    <!-- 閲覧数 -->
-                    <div class="gus-stat-item">
-                        <div class="gus-stat-label">閲覧数</div>
-                        <div class="gus-stat-value"><?php echo number_format($grant_data['views_count']); ?></div>
-                    </div>
-                    
-                    <!-- 残日数 -->
-                    <?php if (!empty($deadline_info) && isset($days_remaining) && $days_remaining > 0): ?>
-                    <div class="gus-stat-item <?php echo esc_attr($deadline_class); ?>">
-                        <div class="gus-stat-label">残日数</div>
-                        <div class="gus-stat-value" style="color: <?php echo $days_remaining <= 7 ? '#DC2626' : ($days_remaining <= 30 ? '#F59E0B' : '#10B981'); ?>">
-                            <?php echo $days_remaining; ?>日
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <!-- 難易度 -->
-                    <div class="gus-stat-item">
-                        <div class="gus-stat-label">難易度</div>
-                        <div class="gus-stat-value">
-                            <?php echo str_repeat('●', $difficulty_data['dots']) . str_repeat('○', 3 - $difficulty_data['dots']); ?>
-                        </div>
-                        <div style="font-size: 10px; color: #666; margin-top: 4px;">
-                            <?php echo esc_html($difficulty_data['description']); ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- アフィリエイト広告: サイドバー中央 -->
-            <?php if (function_exists('ji_display_ad')): ?>
-                <div class="sidebar-ad-space sidebar-ad-middle">
-                    <?php ji_display_ad('single_grant_sidebar_middle', 'single-grant'); ?>
-                </div>
-            <?php endif; ?>
-            
-            <!-- 関連補助金（サイドバー版） -->
+            <!-- ✅ 3. 関連補助金（代替案を素早く提示） -->
             <?php if ($related_query->have_posts()): ?>
             <div class="gus-sidebar-card">
                 <h2 class="gus-sidebar-title">
@@ -4083,7 +4023,7 @@ select {
             endif; 
             ?>
             
-            <!-- 関連コラム（サイドバー版） -->
+            <!-- ✅ 4. 関連コラム（詳しい情報へ誘導） -->
             <?php if ($related_columns_query && $related_columns_query->have_posts()): ?>
             <div class="gus-sidebar-card">
                 <h2 class="gus-sidebar-title">
@@ -4138,7 +4078,57 @@ select {
             endif; 
             ?>
             
-            <!-- PC常時表示AIチャット（UX最適化：関連補助金の後に配置） -->
+            <!-- ✅ 5. アクション（情報を得た後に行動を促す） -->
+            <div class="gus-sidebar-card">
+                <h2 class="gus-sidebar-title">
+                    <span class="gus-icon gus-icon-link"></span>
+                    アクション
+                </h2>
+                <div class="gus-actions">
+                    <!-- 第1優先：AI診断 -->
+                    <a href="<?php echo home_url('/subsidy-diagnosis/'); ?>" 
+                       class="gus-btn gus-btn-primary"
+                       aria-label="AIで最適な補助金を診断">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        AI無料診断
+                    </a>
+                    
+                    <!-- 第2優先：補助金一覧 -->
+                    <a href="<?php echo home_url('/grants/'); ?>" 
+                       class="gus-btn gus-btn-secondary"
+                       aria-label="他の補助金を探す">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        他の補助金を探す
+                    </a>
+                    
+                    <!-- 第3優先：公式サイト -->
+                    <?php if ($grant_data['official_url']): ?>
+                    <a href="<?php echo esc_url($grant_data['official_url']); ?>" 
+                       class="gus-btn gus-btn-secondary" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       aria-label="公式サイトで詳細を確認">
+                        <span class="gus-icon gus-icon-link"></span>
+                        公式サイト
+                    </a>
+                    <?php endif; ?>
+                    
+                    <!-- その他：印刷 -->
+                    <button class="gus-btn gus-btn-secondary" 
+                            onclick="window.print()"
+                            aria-label="このページを印刷">
+                        印刷
+                    </button>
+                </div>
+            </div>
+            
+            <!-- ✅ 6. AIチャット（サポートツールとして配置） -->
             <div class="gus-pc-ai-permanent">
                 <div class="gus-pc-ai-permanent-header">
                     <div class="gus-pc-ai-permanent-title">
@@ -4203,7 +4193,7 @@ select {
                 </div>
             </div>
             
-            <!-- タグ -->
+            <!-- ✅ 7. タグ（SEO用途・関連ページへの誘導） -->
             <?php if ($taxonomies['categories'] || $taxonomies['prefectures'] || $taxonomies['municipalities'] || $taxonomies['tags']): ?>
             <div class="gus-sidebar-card">
                 <h2 class="gus-sidebar-title">
@@ -4273,7 +4263,7 @@ select {
             </div>
             <?php endif; ?>
             
-            <!-- アフィリエイト広告: サイドバー下部 -->
+            <!-- ✅ 8. アフィリエイト広告（収益化は最後に配置） -->
             <?php if (function_exists('ji_display_ad')): ?>
                 <div class="sidebar-ad-space sidebar-ad-bottom">
                     <?php ji_display_ad('single_grant_sidebar_bottom', 'single-grant'); ?>
