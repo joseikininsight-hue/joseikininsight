@@ -53,6 +53,14 @@ if (!have_posts()) {
 get_header();
 the_post();
 
+// ✅ SEO CRITICAL: Canonical URLを設定（重複コンテンツペナルティ防止）
+// Google推奨: 全ページに正規URLを明示し、重複コンテンツ問題を回避
+$canonical_url = get_permalink($post_id);
+if (!empty($canonical_url)) {
+    echo '<!-- Canonical URL: Google重複コンテンツペナルティ防止 -->' . "\n";
+    echo '<link rel="canonical" href="' . esc_url($canonical_url) . '">' . "\n";
+}
+
 $post_id = get_the_ID();
 $seo_title = get_the_title();
 $current_year = date('Y');
@@ -172,14 +180,27 @@ if (has_post_thumbnail($post_id)) {
     }
 }
 
-// SEO: メタディスクリプション生成
+// SEO: メタディスクリプション生成（最適化版: 150-160文字）
+// Google推奨: 30単語ではなく、150-160文字（日本語75-80文字）に最適化
 $meta_description = '';
 if (!empty($grant_data['ai_summary'])) {
-    $meta_description = wp_trim_words($grant_data['ai_summary'], 30, '...');
+    $raw_text = wp_strip_all_tags($grant_data['ai_summary']);
+    $meta_description = mb_substr($raw_text, 0, 160, 'UTF-8');
+    if (mb_strlen($raw_text, 'UTF-8') > 160) {
+        $meta_description .= '...';
+    }
 } elseif (has_excerpt()) {
-    $meta_description = wp_trim_words(get_the_excerpt(), 30, '...');
+    $raw_text = wp_strip_all_tags(get_the_excerpt());
+    $meta_description = mb_substr($raw_text, 0, 160, 'UTF-8');
+    if (mb_strlen($raw_text, 'UTF-8') > 160) {
+        $meta_description .= '...';
+    }
 } else {
-    $meta_description = wp_trim_words(wp_strip_all_tags(get_the_content()), 30, '...');
+    $raw_text = wp_strip_all_tags(get_the_content());
+    $meta_description = mb_substr($raw_text, 0, 160, 'UTF-8');
+    if (mb_strlen($raw_text, 'UTF-8') > 160) {
+        $meta_description .= '...';
+    }
 }
 
 // 読了時間計算
@@ -203,6 +224,21 @@ foreach ($taxonomies['prefectures'] as $pref) {
     $seo_keywords[] = $pref->name;
 }
 $seo_keywords = array_unique($seo_keywords);
+
+// ✅ SEO ENHANCEMENT: Open Graph & Twitter Card Meta Tags
+// ソーシャルシェア時のCTR向上（画像・タイトル・説明文の最適化）
+$og_title = $seo_title;
+$og_description = $meta_description;
+$og_url = $canonical_url;
+$og_site_name = get_bloginfo('name');
+$twitter_card = 'summary_large_image'; // 大きい画像でCTR向上
+
+// robots meta（インデックス制御）
+$robots_content = 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1';
+if ($application_status === 'closed') {
+    // 終了した補助金は検索結果に表示しつつ、Snippetを制限
+    $robots_content = 'index, follow, max-snippet:160, max-image-preview:standard';
+}
 
 // 関連補助金取得
 $related_args = array(
@@ -477,6 +513,35 @@ select {
   ]
 }
 </script>
+
+<!-- ✅ SEO CRITICAL: Open Graph & Twitter Card Meta Tags -->
+<!-- ソーシャルメディア共有時のCTR向上、Googleのソーシャルシグナル評価向上 -->
+<meta property="og:title" content="<?php echo esc_attr($og_title); ?>">
+<meta property="og:description" content="<?php echo esc_attr($og_description); ?>">
+<meta property="og:url" content="<?php echo esc_url($og_url); ?>">
+<meta property="og:image" content="<?php echo esc_url($og_image); ?>">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="<?php echo esc_attr($og_site_name); ?>">
+<meta property="og:locale" content="ja_JP">
+<meta property="article:published_time" content="<?php echo $published_date; ?>">
+<meta property="article:modified_time" content="<?php echo $modified_date; ?>">
+<?php if (!empty($taxonomies['categories'])): ?>
+<meta property="article:section" content="<?php echo esc_attr($taxonomies['categories'][0]->name); ?>">
+<?php endif; ?>
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="<?php echo esc_attr($twitter_card); ?>">
+<meta name="twitter:title" content="<?php echo esc_attr($og_title); ?>">
+<meta name="twitter:description" content="<?php echo esc_attr($og_description); ?>">
+<meta name="twitter:image" content="<?php echo esc_url($og_image); ?>">
+
+<!-- ✅ SEO: Robots Meta Tag (インデックス制御) -->
+<meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
+<meta name="googlebot" content="<?php echo esc_attr($robots_content); ?>">
+
+<!-- SEO: Additional Meta Tags -->
+<meta name="description" content="<?php echo esc_attr($meta_description); ?>">
+<meta name="keywords" content="<?php echo esc_attr(implode(', ', $seo_keywords)); ?>">
 
 <style>
 /* ===============================================
