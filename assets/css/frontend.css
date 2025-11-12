@@ -1,17 +1,17 @@
 /*!
- * Grant Insight Perfect - 統合フロントエンドCSS
- * 全CSSを統合・最適化したメインスタイルシート
- * 重複削除、階層整理済み
+ * Grant Insight Perfect - フロントエンド統合CSS
+ * unified-frontend.css + grant-dynamic-styles.css + column.css
  * 
- * @version 1.0.0
- * @date 2025-10-05
+ * @version 2.0.0
+ * @date 2025-11-12
+ * @description 重複削除、パフォーマンス最適化済み
  */
 
 /* ===============================================
    CSS変数定義 - 一元管理
    =============================================== */
 :root {
-    /* カラーシステム - みんなの銀行風モノクロベース */
+    /* カラーシステム - モノクロベース */
     --mb-black: #000000;
     --mb-white: #FFFFFF;
     --mb-gray-900: #0F0F0F;
@@ -30,25 +30,57 @@
     --primary-dark: #047857;
     --primary-light: #10b981;
     
-    /* アクセントカラー（最小限の使用） */
+    /* アクセントカラー */
     --accent-red: #E60012;
     --accent-green: #00C853;
     --accent-orange: #ea580c;
     
+    /* コラムシステム専用 */
+    --column-primary: #059669;
+    --column-primary-dark: #047857;
+    --column-text: #111827;
+    --column-text-light: #6b7280;
+    --column-border: #e5e7eb;
+    --column-bg-light: #f9fafb;
+    
+    /* Grant Dynamic Styles専用 */
+    --gdc-border-color: #e0e0e0;
+    --gdc-border-width: 1px;
+    --gdc-border-width-thick: 2px;
+    --gdc-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --gdc-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    --gdc-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --gdc-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --gdc-radius: 4px;
+    --gdc-radius-sm: 2px;
+    --gdc-radius-md: 6px;
+    --gdc-radius-lg: 8px;
+    
     /* フォントファミリー */
     --font-primary: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
     --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --gdc-font-monospace: var(--font-mono);
     
-    /* フォントサイズ（16px以上でiOS自動ズーム防止） */
+    /* フォントサイズ */
     --text-xs: 0.8125rem;    /* 13px */
     --text-sm: 0.875rem;     /* 14px */
     --text-base: 0.9375rem;  /* 15px */
-    --text-md: 1rem;         /* 16px - 最小サイズ */
-    --text-lg: 1.125rem;     /* 18px - チャット用拡大 */
+    --text-md: 1rem;         /* 16px */
+    --text-lg: 1.125rem;     /* 18px */
     --text-xl: 1.25rem;      /* 20px */
     --text-2xl: 1.5rem;      /* 24px */
     --text-3xl: 1.875rem;    /* 30px */
     --text-4xl: 2.25rem;     /* 36px */
+    
+    /* GDC フォントサイズ */
+    --gdc-text-xs: 0.75rem;
+    --gdc-text-sm: 0.875rem;
+    --gdc-text-base: 1rem;
+    --gdc-text-md: 1.0625rem;
+    --gdc-text-lg: 1.125rem;
+    --gdc-text-xl: 1.25rem;
+    --gdc-text-2xl: 1.5rem;
+    --gdc-text-3xl: 1.875rem;
     
     /* スペーシング */
     --spacing-xs: 4px;
@@ -57,6 +89,17 @@
     --spacing-lg: 24px;
     --spacing-xl: 32px;
     --spacing-2xl: 48px;
+    
+    /* GDC スペーシング */
+    --gdc-space-1: 0.25rem;
+    --gdc-space-2: 0.5rem;
+    --gdc-space-3: 0.75rem;
+    --gdc-space-4: 1rem;
+    --gdc-space-5: 1.25rem;
+    --gdc-space-6: 1.5rem;
+    --gdc-space-8: 2rem;
+    --gdc-space-10: 2.5rem;
+    --gdc-space-12: 3rem;
     
     /* Touch-friendly sizing */
     --touch-target-min: 44px;
@@ -74,6 +117,17 @@
     --duration-slow: 350ms;
     --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    /* GDC トランジション */
+    --gdc-transition-fast: 150ms ease;
+    --gdc-transition-base: 200ms ease;
+    --gdc-transition-slow: 300ms ease;
+    
+    /* GDC 行間 */
+    --gdc-line-height-tight: 1.25;
+    --gdc-line-height-normal: 1.5;
+    --gdc-line-height-relaxed: 1.625;
+    --gdc-line-height-loose: 1.75;
     
     /* Z-index管理 */
     --z-dropdown: 50;
@@ -123,21 +177,21 @@ body {
     background-color: var(--mb-white);
     min-height: 100vh;
     position: relative;
+}
+
+.gdc-content-wrapper {
+    font-family: var(--font-primary);
+    color: var(--mb-gray-900);
+    line-height: var(--gdc-line-height-relaxed);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
 /* ===============================================
-   グローバル色対応ルール（コントラスト修正）
+   グローバル色対応ルール
    =============================================== */
-
-/* 白背景 → 黒系文字・アイコン */
 .bg-white,
-.background-white,
-*[style*="background: #fff"],
-*[style*="background: white"],
-*[style*="background-color: #fff"],
-*[style*="background-color: white"] {
+.background-white {
     color: var(--mb-black) !important;
 }
 
@@ -146,39 +200,14 @@ body {
     color: var(--mb-black) !important;
 }
 
-.bg-white svg,
-.bg-white i,
-.bg-white .icon,
-.background-white svg,
-.background-white i,
-.background-white .icon {
-    color: var(--mb-black) !important;
-    fill: var(--mb-black) !important;
-}
-
-/* 黒背景 → 白系文字・アイコン */
 .bg-black,
-.background-black,
-*[style*="background: #000"],
-*[style*="background: black"],
-*[style*="background-color: #000"],
-*[style*="background-color: black"] {
+.background-black {
     color: var(--mb-white) !important;
 }
 
 .bg-black *:not(a):not(button),
 .background-black *:not(a):not(button) {
     color: var(--mb-white) !important;
-}
-
-.bg-black svg,
-.bg-black i,
-.bg-black .icon,
-.background-black svg,
-.background-black i,
-.background-black .icon {
-    color: var(--mb-white) !important;
-    fill: var(--mb-white) !important;
 }
 
 /* ===============================================
@@ -238,6 +267,218 @@ a {
 a:hover {
     color: var(--primary-green);
     text-decoration: underline;
+}
+
+/* ===============================================
+   Grant Dynamic Styles - 段落・見出し
+   =============================================== */
+.gdc-paragraph {
+    margin-bottom: var(--gdc-space-4);
+    font-size: var(--gdc-text-base);
+    line-height: var(--gdc-line-height-relaxed);
+    color: var(--mb-gray-800);
+}
+
+.gdc-paragraph--lead {
+    font-size: var(--gdc-text-lg);
+    font-weight: 500;
+    line-height: var(--gdc-line-height-relaxed);
+    color: var(--mb-gray-900);
+    margin-bottom: var(--gdc-space-6);
+}
+
+.gdc-heading {
+    font-weight: 700;
+    line-height: var(--gdc-line-height-tight);
+    color: var(--mb-black);
+    margin-top: var(--gdc-space-8);
+    margin-bottom: var(--gdc-space-4);
+    letter-spacing: -0.02em;
+}
+
+.gdc-heading:first-child {
+    margin-top: 0;
+}
+
+.gdc-heading--h2 {
+    font-size: var(--gdc-text-2xl);
+    padding-bottom: var(--gdc-space-3);
+    border-bottom: var(--gdc-border-width-thick) solid var(--mb-black);
+    margin-bottom: var(--gdc-space-5);
+}
+
+.gdc-heading--h3 {
+    font-size: var(--gdc-text-xl);
+    padding-left: var(--gdc-space-3);
+    border-left: 4px solid var(--mb-gray-900);
+}
+
+.gdc-heading--h4 {
+    font-size: var(--gdc-text-lg);
+    font-weight: 600;
+}
+
+/* ===============================================
+   Grant Dynamic Styles - テーブル
+   =============================================== */
+.gdc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: var(--gdc-space-6);
+    font-size: var(--gdc-text-sm);
+    background: var(--mb-white);
+    border: var(--gdc-border-width) solid var(--gdc-border-color);
+    border-radius: var(--gdc-radius);
+    overflow: hidden;
+}
+
+.gdc-table--monochrome {
+    box-shadow: var(--gdc-shadow);
+}
+
+.gdc-table thead {
+    background: var(--mb-gray-900);
+    color: var(--mb-white);
+}
+
+.gdc-table th {
+    padding: var(--gdc-space-3) var(--gdc-space-4);
+    text-align: left;
+    font-weight: 700;
+    font-size: var(--gdc-text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: var(--gdc-border-width-thick) solid var(--mb-black);
+}
+
+.gdc-table tbody tr {
+    border-bottom: var(--gdc-border-width) solid var(--gdc-border-color);
+    transition: background-color var(--gdc-transition-fast);
+}
+
+.gdc-table tbody tr:hover {
+    background-color: var(--mb-gray-50);
+}
+
+.gdc-table td {
+    padding: var(--gdc-space-3) var(--gdc-space-4);
+    color: var(--mb-gray-800);
+    line-height: var(--gdc-line-height-normal);
+}
+
+.gdc-table--striped tbody tr:nth-child(odd) {
+    background-color: var(--mb-gray-50);
+}
+
+/* ===============================================
+   Grant Dynamic Styles - リスト
+   =============================================== */
+.gdc-list {
+    margin-bottom: var(--gdc-space-5);
+    padding-left: var(--gdc-space-6);
+}
+
+.gdc-list--unordered {
+    list-style-type: disc;
+}
+
+.gdc-list--ordered {
+    list-style-type: decimal;
+}
+
+.gdc-list li {
+    margin-bottom: var(--gdc-space-2);
+    line-height: var(--gdc-line-height-relaxed);
+    color: var(--mb-gray-800);
+    padding-left: var(--gdc-space-2);
+}
+
+.gdc-list li::marker {
+    color: var(--mb-black);
+    font-weight: 700;
+}
+
+/* ===============================================
+   Grant Dynamic Styles - 引用
+   =============================================== */
+.gdc-blockquote {
+    margin: var(--gdc-space-6) 0;
+    padding: var(--gdc-space-5) var(--gdc-space-6);
+    background: var(--mb-gray-50);
+    border-left: 4px solid var(--mb-black);
+    font-size: var(--gdc-text-md);
+    line-height: var(--gdc-line-height-loose);
+    color: var(--mb-gray-800);
+    font-style: italic;
+    position: relative;
+}
+
+.gdc-blockquote::before {
+    content: '"';
+    position: absolute;
+    top: var(--gdc-space-3);
+    left: var(--gdc-space-4);
+    font-size: var(--gdc-text-3xl);
+    line-height: 1;
+    color: var(--mb-gray-400);
+    font-family: Georgia, serif;
+}
+
+/* ===============================================
+   Grant Dynamic Styles - 画像
+   =============================================== */
+.gdc-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: var(--gdc-space-6) 0;
+    border: var(--gdc-border-width) solid var(--gdc-border-color);
+    border-radius: var(--gdc-radius);
+}
+
+.gdc-image--monochrome {
+    box-shadow: var(--gdc-shadow-md);
+    transition: transform var(--gdc-transition-base), box-shadow var(--gdc-transition-base);
+}
+
+.gdc-image--monochrome:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--gdc-shadow-lg);
+}
+
+/* ===============================================
+   Grant Dynamic Styles - コード
+   =============================================== */
+code {
+    font-family: var(--gdc-font-monospace);
+    font-size: 0.9em;
+    padding: var(--gdc-space-1) var(--gdc-space-2);
+    background: var(--mb-gray-100);
+    border: var(--gdc-border-width) solid var(--mb-gray-300);
+    border-radius: var(--gdc-radius-sm);
+    color: var(--mb-gray-900);
+}
+
+pre {
+    font-family: var(--gdc-font-monospace);
+    font-size: var(--gdc-text-sm);
+    line-height: var(--gdc-line-height-relaxed);
+    padding: var(--gdc-space-4);
+    background: var(--mb-gray-900);
+    color: var(--mb-gray-100);
+    border-radius: var(--gdc-radius);
+    overflow-x: auto;
+    margin: var(--gdc-space-5) 0;
+    box-shadow: var(--gdc-shadow);
+}
+
+pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
 }
 
 /* ===============================================
@@ -339,7 +580,6 @@ a:hover {
     text-decoration: none;
 }
 
-/* Mobile menu toggle */
 .menu-toggle {
     display: none;
     background: none;
@@ -397,7 +637,7 @@ a:hover {
 }
 
 /* ===============================================
-   カテゴリセクション（フォント修正済み）
+   カテゴリセクション
    =============================================== */
 .categories-section,
 .section-categories {
@@ -426,11 +666,10 @@ a:hover {
     border-color: var(--primary-blue);
 }
 
-/* カテゴリカードタイポグラフィ（修正済み） */
 .categories-section .category-card .card-title,
 .section-categories .category-card .card-title,
 [class*="category"] .card-title {
-    font-size: 20px !important; /* デスクトップ：バランス調整 */
+    font-size: 20px !important;
     font-weight: 700;
     line-height: 1.3;
     color: var(--mb-black);
@@ -440,26 +679,10 @@ a:hover {
 .categories-section .category-card .card-description,
 .section-categories .category-card .card-description,
 [class*="category"] .card-description {
-    font-size: 15px !important; /* 可読性向上 */
+    font-size: 15px !important;
     line-height: 1.5;
     color: #4a4a4a;
     margin-bottom: 1rem;
-}
-
-/* Recent Grants */
-.recent-grants {
-    margin-top: 1rem;
-}
-
-.recent-grant-item {
-    padding: var(--spacing-sm) 0;
-    border-bottom: 1px solid var(--mb-gray-100);
-    font-size: var(--text-sm);
-    color: var(--mb-gray-600);
-}
-
-.recent-grant-item:last-child {
-    border-bottom: none;
 }
 
 /* ===============================================
@@ -481,10 +704,6 @@ a:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
     border-color: var(--primary-blue);
-}
-
-.grant-card-header {
-    margin-bottom: var(--spacing-md);
 }
 
 .grant-card-title {
@@ -554,7 +773,148 @@ a:hover {
 }
 
 /* ===============================================
-   チャットUI（拡大フォント修正済み）
+   コラムシステム
+   =============================================== */
+.column-tab-link {
+    color: var(--column-text-light);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.column-tab-link:hover {
+    color: var(--column-text);
+    border-bottom-color: var(--column-border);
+}
+
+.column-tab-link.active {
+    color: var(--column-primary);
+    border-bottom-color: var(--column-primary);
+    font-weight: 600;
+}
+
+.column-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.column-card:hover {
+    transform: translateY(-4px);
+}
+
+.featured-column-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.featured-column-card:hover {
+    transform: translateY(-4px);
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: #ffffff;
+    border: 1px solid var(--column-border);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--column-text-light);
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background-color: var(--column-bg-light);
+    border-color: #d1d5db;
+    color: var(--column-text);
+}
+
+.filter-btn.active {
+    background-color: var(--column-primary);
+    border-color: var(--column-primary);
+    color: #ffffff;
+}
+
+/* 記事本文スタイル */
+.article-content {
+    font-size: 16px;
+    line-height: 1.8;
+    color: #374151;
+}
+
+.article-content h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--column-text);
+    margin-top: 2.5rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--column-border);
+}
+
+.article-content h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--column-text);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.article-content h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--column-text);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.article-content p {
+    margin-bottom: 1.5rem;
+}
+
+.article-content a {
+    color: var(--column-primary);
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.article-content a:hover {
+    color: var(--column-primary-dark);
+}
+
+.article-content img {
+    border-radius: 0.5rem;
+    margin: 2rem auto;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.article-content blockquote {
+    border-left: 4px solid var(--column-primary);
+    background-color: var(--column-bg-light);
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: #4b5563;
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+/* ===============================================
+   チャットUI
    =============================================== */
 .chat-container {
     position: fixed;
@@ -585,13 +945,11 @@ a:hover {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 16px !important; /* 余白削減 */
+    padding: 16px !important;
     display: flex;
     flex-direction: column;
-    gap: 14px !important; /* 間隔調整 */
+    gap: 14px !important;
 }
-
-
 
 .message-ai .message-bubble {
     background: var(--mb-white) !important;
@@ -767,7 +1125,6 @@ a:hover {
     text-decoration: none;
 }
 
-/* フォーム要素 */
 .form-group {
     margin-bottom: var(--spacing-lg);
 }
@@ -850,10 +1207,8 @@ a:hover {
 .mt-5 { margin-top: var(--spacing-xl); }
 
 /* ===============================================
-   装飾要素削除（ユーザー要望）
+   装飾要素削除
    =============================================== */
-
-/* 上部点線等の装飾を全削除 */
 .single-grant::before,
 .single-grant header::before,
 .grant-stylish::before,
@@ -864,17 +1219,29 @@ article.grant::before {
     display: none !important;
 }
 
-/* 点線スタイルのボーダーを全て削除 */
-*[style*="border-top: dashed"],
-*[style*="border-style: dashed"] {
-    border-top: none !important;
+/* ===============================================
+   スクロール修正
+   =============================================== */
+html, body {
+    overflow: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
+}
+
+@media (max-width: 1023px) {
+    html, body {
+        display: block !important;
+        width: 100% !important;
+        position: relative !important;
+    }
 }
 
 /* ===============================================
    レスポンシブデザイン
    =============================================== */
 @media (max-width: 768px) {
-    /* ナビゲーション */
     .main-navigation {
         display: none;
     }
@@ -883,25 +1250,22 @@ article.grant::before {
         display: block;
     }
     
-    /* ヒーロー */
     .hero-section {
         padding: var(--spacing-xl) 0;
     }
     
-    /* カテゴリセクション - モバイルフォント調整 */
     .categories-section .category-card .card-title,
     .section-categories .category-card .card-title,
     [class*="category"] .card-title {
-        font-size: 17px !important; /* モバイル：17px（13px→17px） */
+        font-size: 17px !important;
     }
     
     .categories-section .category-card .card-description,
     .section-categories .category-card .card-description,
     [class*="category"] .card-description {
-        font-size: 14px !important; /* モバイル：14px */
+        font-size: 14px !important;
     }
     
-    /* グリッド */
     .categories-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
@@ -912,7 +1276,6 @@ article.grant::before {
         grid-template-columns: 1fr;
     }
     
-    /* チャット */
     .chat-container {
         width: calc(100vw - 40px);
         height: calc(100vh - 100px);
@@ -930,7 +1293,6 @@ article.grant::before {
         font-size: var(--text-lg);
     }
     
-    /* フォント調整 */
     .container {
         padding: 0 var(--spacing-sm);
     }
@@ -939,15 +1301,38 @@ article.grant::before {
         padding: var(--spacing-lg) 0;
     }
     
-    /* フッター */
     .footer-content {
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
     }
+    
+    .article-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    .article-content h3 {
+        font-size: 1.25rem;
+    }
+    
+    .featured-column-card:hover,
+    .column-card:hover {
+        transform: none;
+    }
+    
+    .gdc-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .gdc-table th,
+    .gdc-table td {
+        padding: var(--gdc-space-2) var(--gdc-space-3);
+        font-size: var(--gdc-text-xs);
+    }
 }
 
 @media (max-width: 480px) {
-    /* さらに小さなデバイス用調整 */
     .hero-title {
         font-size: 24px !important;
     }
@@ -961,9 +1346,8 @@ article.grant::before {
         font-size: var(--text-sm);
     }
     
-    /* チャットメッセージ - スマホでも大きなフォント */
     .message-bubble {
-        font-size: 17px !important; /* スマホでも大きく */
+        font-size: 17px !important;
         padding: 16px 18px !important;
     }
 }
@@ -975,7 +1359,11 @@ article.grant::before {
     .chat-container,
     .chat-toggle,
     .site-header,
-    .site-footer {
+    .site-footer,
+    .column-sidebar,
+    .related-articles,
+    .pagination,
+    .tab-navigation {
         display: none !important;
     }
     
@@ -986,10 +1374,27 @@ article.grant::before {
         background: #fff;
     }
     
-    .grant-card {
+    .grant-card,
+    .category-card {
         break-inside: avoid;
         border: 1px solid #000;
         margin-bottom: 1rem;
+    }
+    
+    .article-content {
+        font-size: 12pt;
+        line-height: 1.6;
+    }
+    
+    .article-content a {
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .article-content a::after {
+        content: " (" attr(href) ")";
+        font-size: 0.8em;
+        color: #666;
     }
 }
 
@@ -1011,6 +1416,10 @@ article.grant::before {
     .btn {
         border: 2px solid currentColor;
     }
+    
+    .gdc-table {
+        border-width: var(--gdc-border-width-thick);
+    }
 }
 
 /* ===============================================
@@ -1027,194 +1436,5 @@ article.grant::before {
     
     html {
         scroll-behavior: auto;
-    }
-}
-/* ===============================================
-   スクロール修正（scroll-fix.css統合）
-   開発・デバッグ用のスクロール問題修正
-   =============================================== */
-
-/* 基本的なスクロール修正 - Basic scroll fixes */
-html, body {
-    overflow: auto !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    height: auto !important;
-    min-height: 100vh !important;
-}
-
-/* モバイル専用の強化 */
-@media (max-width: 1023px) {
-    html, body {
-        display: block !important;
-        width: 100% !important;
-        position: relative !important;
-    }
-    
-    body {
-        min-height: 100vh !important;
-        height: auto !important;
-    }
-    
-    #page,
-    .site {
-        display: block !important;
-        width: 100% !important;
-        overflow: visible !important;
-        min-height: 100vh !important;
-        height: auto !important;
-    }
-    
-    .site-main,
-    main {
-        display: block !important;
-        width: 100% !important;
-        overflow: visible !important;
-        height: auto !important;
-        min-height: auto !important;
-    }
-}
-
-/* no-scrollクラスの無効化 - Disable no-scroll classes */
-html.no-scroll,
-body.no-scroll,
-.no-scroll {
-    overflow: auto !important;
-}
-
-/* ヒーローセクションの修正 - Hero section fixes */
-.section-hero,
-.hero,
-.banner,
-section[class*="hero"]:not(.gih-hero-section),
-.landing-hero,
-.page-hero,
-.front-page {
-    /* 固定位置の修正 */
-    position: relative !important;
-    
-    /* オーバーフロー修正 */
-    overflow: visible !important;
-}
-
-/* より具体的なヒーローセクション（gih-hero-sectionを除外） */
-.section-hero.front-page:not(.gih-hero-section),
-section.section-hero.front-page:not(.gih-hero-section) {
-    min-height: 100vh !important;
-    height: auto !important;
-    position: relative !important;
-    overflow: visible !important;
-}
-
-/* gih-hero-sectionクラスを持つ要素は独自のスタイルを維持 */
-.gih-hero-section {
-    /* 他のスタイルよりも優先される */
-    min-height: auto !important;
-    height: auto !important;
-}
-
-/* モバイル専用の調整 */
-@media (max-width: 1023px) {
-    .gih-hero-section {
-        display: block !important;
-        min-height: auto !important;
-        height: auto !important;
-    }
-}
-
-/* デスクトップ専用の調整 */
-@media (min-width: 1024px) {
-    .gih-hero-section {
-        display: flex !important;
-        align-items: center !important;
-    }
-}
-
-/* WordPressやその他CMSの一般的なクラス */
-.site-main,
-.site-content,
-.main-content,
-.page-content {
-    overflow: visible !important;
-}
-
-/* すべてのセクション要素 */
-section {
-    width: 100% !important;
-    overflow: visible !important;
-}
-
-/* 検索関連セクション */
-.stats-banner,
-.search-section,
-.category-browse-section,
-.prefecture-section,
-.municipality-section,
-.recommend-section,
-.new-grants-section {
-    width: 100% !important;
-    overflow: visible !important;
-    display: block !important;
-}
-
-/* ラッパー要素の修正 */
-.wrapper,
-.container,
-.site-wrapper,
-#page,
-#main {
-    overflow: visible !important;
-    min-height: auto !important;
-    height: auto !important;
-}
-
-/* アニメーション関連の修正 */
-.animated,
-.animate__animated {
-    overflow: visible !important;
-}
-
-/* JavaScriptによるスクロール無効化を防ぐ */
-/* Prevent JavaScript from disabling scroll */
-html[style*="overflow: hidden"],
-body[style*="overflow: hidden"] {
-    overflow: auto !important;
-}
-
-/* スクロールバーのスタイル調整（Webkit系ブラウザ） */
-/* Scrollbar styling for Webkit browsers */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* モバイル対応 - Mobile responsive scroll fixes */
-@media (max-width: 768px) {
-    .section-hero,
-    .hero,
-    section[class*="hero"] {
-        min-height: 70vh !important;
-        padding: 20px 0 !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .section-hero,
-    .hero,
-    section[class*="hero"] {
-        min-height: 50vh !important;
-        padding: 15px 0 !important;
     }
 }

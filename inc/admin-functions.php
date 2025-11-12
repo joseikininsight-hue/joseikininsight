@@ -1338,7 +1338,7 @@ class GrantPostMetaboxes {
         }
         
         wp_enqueue_script('grant-metaboxes', get_template_directory_uri() . '/assets/js/grant-metaboxes.js', array('jquery'), '1.0.0', true);
-        wp_enqueue_style('grant-metaboxes', get_template_directory_uri() . '/assets/css/admin-metaboxes.css', array(), '1.0.0');
+        // CSS読み込みは theme-foundation.php で統合管理（admin.css）
         
         wp_localize_script('grant-metaboxes', 'grantMetaboxes', array(
             'ajaxurl' => admin_url('admin-ajax.php'),

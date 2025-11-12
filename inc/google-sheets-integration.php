@@ -4777,17 +4777,7 @@ class SheetsAdminUI {
         
         wp_localize_script('gi-sheets-admin', 'giSheetsAdmin', $localize_data);
         
-        // CSSファイルも確認
-        $css_path = get_template_directory_uri() . '/assets/css/sheets-admin.css';
-        $css_file_path = get_template_directory() . '/assets/css/sheets-admin.css';
-        
-        
-        wp_enqueue_style(
-            'gi-sheets-admin-style',
-            $css_path,
-            array(),
-            GI_THEME_VERSION
-        );
+        // CSS読み込みは theme-foundation.php で統合管理（admin.css）
     }
     
     /**

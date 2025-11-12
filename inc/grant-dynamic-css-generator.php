@@ -62,20 +62,8 @@ class Grant_Dynamic_CSS_Generator {
      * 動的スタイルシートをエンキュー
      */
     public function enqueue_dynamic_styles() {
-        // grant投稿タイプのみで読み込み
-        if (!is_singular('grant')) {
-            return;
-        }
-        
-        $css_file = get_template_directory_uri() . '/assets/css/grant-dynamic-styles.css';
-        
-        wp_enqueue_style(
-            'grant-dynamic-styles',
-            $css_file,
-            array(), // 依存なし
-            $this->css_version,
-            'all'
-        );
+        // CSS読み込みは theme-foundation.php で統合管理（frontend.css）
+        // grant-dynamic-styles.css は frontend.css に統合済み
     }
     
     /**

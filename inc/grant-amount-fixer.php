@@ -91,13 +91,7 @@ class GI_Grant_Amount_Fixer {
             return;
         }
         
-        // スタイル
-        wp_enqueue_style(
-            'gi-amount-fixer-css',
-            get_template_directory_uri() . '/assets/css/amount-fixer.css',
-            array(),
-            GI_THEME_VERSION
-        );
+        // CSS読み込みは theme-foundation.php で統合管理（admin.css）
         
         // スクリプト
         wp_enqueue_script(

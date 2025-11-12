@@ -105,7 +105,8 @@ function gi_content_width() {
 add_action('after_setup_theme', 'gi_content_width', 0);
 
 /**
- * スクリプト・スタイルの読み込み - Tailwind CSS Build Edition
+ * スクリプト・スタイルの読み込み - 最適化版（2025-11-12）
+ * フロントエンドCSS: 3ファイル→2ファイルに統合
  */
 function gi_enqueue_scripts() {
     // Tailwind CSS Build Edition（本番用：最小化版、開発用：通常版）
@@ -123,9 +124,9 @@ function gi_enqueue_scripts() {
     // WordPressテーマメインスタイルシート（Tailwindの後に読み込み）
     wp_enqueue_style('gi-style', get_stylesheet_uri(), array('gi-tailwind'), GI_THEME_VERSION);
     
-    // 統合フロントエンドCSS（カスタムスタイル用）
-    if (file_exists(get_template_directory() . '/assets/css/unified-frontend.css')) {
-        wp_enqueue_style('gi-unified-frontend', get_template_directory_uri() . '/assets/css/unified-frontend.css', array('gi-tailwind'), GI_THEME_VERSION);
+    // 統合フロントエンドCSS（最適化版 - unified + dynamic + column統合）
+    if (file_exists(get_template_directory() . '/assets/css/frontend.css')) {
+        wp_enqueue_style('gi-frontend', get_template_directory_uri() . '/assets/css/frontend.css', array('gi-tailwind'), GI_THEME_VERSION);
     }
     
     // Google Fonts（日本語フォント）
@@ -876,7 +877,8 @@ function gi_pagination($pages = '') {
  */
 function gi_admin_assets() {
     // 統合管理画面CSS読み込み
-    wp_enqueue_style('gi-admin-consolidated', get_template_directory_uri() . '/assets/css/admin-consolidated.css', array(), GI_THEME_VERSION);
+    // 管理画面統合CSS（最適化版 - admin-consolidated + amount-fixer + sheets-admin統合）
+    wp_enqueue_style('gi-admin', get_template_directory_uri() . '/assets/css/admin.css', array(), GI_THEME_VERSION);
     
     // 統合管理画面JavaScript読み込み
     wp_enqueue_script('gi-admin-consolidated', get_template_directory_uri() . '/assets/js/admin-consolidated.js', array('jquery'), GI_THEME_VERSION, true);
