@@ -136,10 +136,16 @@ function gi_enqueue_scripts() {
     if (file_exists(get_template_directory() . '/assets/js/frontend.js')) {
         wp_enqueue_script('gi-frontend', get_template_directory_uri() . '/assets/js/frontend.js', array(), GI_THEME_VERSION, true);
         
-        // AJAX設定
+        // AJAX設定（メイン）
         wp_localize_script('gi-frontend', 'gi_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('gi_ajax_nonce')
+        ));
+        
+        // AJAX設定（閲覧履歴用 - 旧grant-viewing-history.js互換）
+        wp_localize_script('gi-frontend', 'giAjaxConfig', array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('gi_viewing_history_nonce')
         ));
     }
 }

@@ -461,8 +461,12 @@ function gi_remove_duplicate_acf_content($content) {
  * Enqueue Column System CSS and JavaScript
  * コラムシステムのCSS・JavaScriptを読み込み
  * 
+ * DISABLED: Consolidated into frontend.css and frontend.js
+ * These files are now loaded by theme-foundation.php
+ * 
  * @return void
  */
+/*
 function gi_enqueue_column_assets() {
     // コラム関連ページのみ読み込み
     if (is_singular('column') || is_post_type_archive('column') || 
@@ -487,6 +491,7 @@ function gi_enqueue_column_assets() {
     }
 }
 add_action('wp_enqueue_scripts', 'gi_enqueue_column_assets');
+*/
 
 /**
  * Enqueue Admin Error Fix Script
@@ -509,8 +514,12 @@ add_action('admin_enqueue_scripts', 'gi_enqueue_admin_error_fix', 1); // Priorit
  * Enqueue Ad Error Handler Script
  * 広告エラーを処理するスクリプトを読み込み
  * 
+ * DISABLED: Consolidated into frontend.js
+ * This file is now loaded by theme-foundation.php
+ * 
  * @return void
  */
+/*
 function gi_enqueue_ad_error_handler() {
     wp_enqueue_script(
         'gi-ad-error-handler',
@@ -521,13 +530,19 @@ function gi_enqueue_ad_error_handler() {
     );
 }
 add_action('wp_enqueue_scripts', 'gi_enqueue_ad_error_handler');
+*/
 
 /**
  * Enqueue Grant Viewing History Tracker
  * 補助金閲覧履歴トラッキングスクリプトを読み込み
  * 
+ * DISABLED: Consolidated into frontend.js
+ * This file is now loaded by theme-foundation.php
+ * The giAjaxConfig localization is now done in theme-foundation.php
+ * 
  * @return void
  */
+/*
 function gi_enqueue_viewing_history() {
     wp_enqueue_script(
         'gi-viewing-history',
@@ -544,6 +559,7 @@ function gi_enqueue_viewing_history() {
     ));
 }
 add_action('wp_enqueue_scripts', 'gi_enqueue_viewing_history');
+*/
 
 /**
  * WordPress REST API 設定をJavaScriptに渡す
