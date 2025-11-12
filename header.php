@@ -2,10 +2,10 @@
 /**
  * JOSEIKIN INSIGHT - Full Width Mega Menu Header
  * LYZON風 横幅いっぱいメガメニュー対応
- * 対象者「個人向け」対応版
+ * 補助金・助成金対応版
  * 
  * @package Joseikin_Insight_Header
- * @version 6.2.0
+ * @version 6.3.0
  */
 ?>
 <!DOCTYPE html>
@@ -77,6 +77,7 @@
         /* ===============================================
            JOSEIKIN INSIGHT - FULL WIDTH MEGA MENU HEADER
            LYZON風 完全横幅展開メガメニュー
+           補助金・助成金対応版
            =============================================== */
         
         :root {
@@ -1008,7 +1009,7 @@
         <div class="ji-header-inner">
             <!-- Logo -->
             <a href="<?php echo esc_url(home_url('/')); ?>" class="ji-logo" aria-label="<?php bloginfo('name'); ?> ホームページへ">
-                <img src="https://joseikin-insight.com/wp-content/uploads/2025/11/cropped-cropped-名称未設定のデザイン１.png" 
+                <img src="https://wp.me/agNmbi-yma" 
                      alt="<?php bloginfo('name'); ?>" 
                      class="ji-logo-image"
                      width="200"
@@ -1047,13 +1048,13 @@
                     <div class="ji-mega-menu">
                         <div class="ji-mega-menu-inner">
                             <div class="ji-mega-menu-grid">
-                                <!-- Column 1: 助成金を探す -->
+                                <!-- Column 1: 補助金・助成金を探す -->
                                 <div class="ji-mega-column">
-                                    <div class="ji-mega-column-title">助成金を探す</div>
-                                    <a href="<?php echo esc_url($grants_url); ?>" class="ji-mega-link">すべての助成金</a>
-                                    <a href="<?php echo esc_url(add_query_arg('application_status', 'open', $grants_url)); ?>" class="ji-mega-link">募集中の助成金</a>
+                                    <div class="ji-mega-column-title">補助金・助成金を探す</div>
+                                    <a href="<?php echo esc_url($grants_url); ?>" class="ji-mega-link">すべての補助金・助成金</a>
+                                    <a href="<?php echo esc_url(add_query_arg('application_status', 'open', $grants_url)); ?>" class="ji-mega-link">募集中の補助金・助成金</a>
                                     <a href="<?php echo esc_url(add_query_arg('orderby', 'deadline', $grants_url)); ?>" class="ji-mega-link">締切間近</a>
-                                    <a href="<?php echo esc_url(add_query_arg('orderby', 'new', $grants_url)); ?>" class="ji-mega-link">新着助成金</a>
+                                    <a href="<?php echo esc_url(add_query_arg('orderby', 'new', $grants_url)); ?>" class="ji-mega-link">新着補助金・助成金</a>
                                 </div>
                                 
                                 <!-- Column 2: カテゴリーから探す -->
@@ -1161,8 +1162,8 @@
                             <div class="ji-mega-menu-grid">
                                 <div class="ji-mega-column">
                                     <div class="ji-mega-column-title">ツール</div>
-                                    <a href="<?php echo esc_url($diagnosis_url); ?>" class="ji-mega-link">助成金診断システム</a>
-                                    <a href="<?php echo esc_url(home_url('/calculator/')); ?>" class="ji-mega-link">助成金計算ツール</a>
+                                    <a href="<?php echo esc_url($diagnosis_url); ?>" class="ji-mega-link">補助金・助成金診断システム</a>
+                                    <a href="<?php echo esc_url(home_url('/calculator/')); ?>" class="ji-mega-link">補助金・助成金計算ツール</a>
                                 </div>
                             </div>
                         </div>
@@ -1182,15 +1183,15 @@
                             <div class="ji-mega-menu-grid">
                                 <div class="ji-mega-column">
                                     <div class="ji-mega-column-title">初めての方へ</div>
-                                    <a href="<?php echo esc_url($home_url); ?>" class="ji-mega-link">助成金インサイトとは</a>
+                                    <a href="<?php echo esc_url($home_url); ?>" class="ji-mega-link">補助金・助成金インサイトとは</a>
                                     <a href="<?php echo esc_url($how_to_use_url); ?>" class="ji-mega-link">使い方ガイド</a>
                                     <a href="<?php echo esc_url(home_url('/faq/')); ?>" class="ji-mega-link">よくある質問</a>
                                     <a href="<?php echo esc_url(home_url('/glossary/')); ?>" class="ji-mega-link">用語集</a>
                                 </div>
                                 
                                 <div class="ji-mega-column">
-                                    <div class="ji-mega-column-title">助成金の基礎知識</div>
-                                    <a href="<?php echo esc_url(home_url('/knowledge/')); ?>" class="ji-mega-link">助成金とは</a>
+                                    <div class="ji-mega-column-title">補助金・助成金の基礎知識</div>
+                                    <a href="<?php echo esc_url(home_url('/knowledge/')); ?>" class="ji-mega-link">補助金・助成金とは</a>
                                     <a href="<?php echo esc_url(home_url('/knowledge/how-to-apply/')); ?>" class="ji-mega-link">申請方法</a>
                                     <a href="<?php echo esc_url(home_url('/knowledge/tips/')); ?>" class="ji-mega-link">採択のコツ</a>
                                     <a href="<?php echo esc_url(home_url('/knowledge/common-mistakes/')); ?>" class="ji-mega-link">よくある失敗例</a>
@@ -1261,7 +1262,7 @@
                 <!-- CTA Button -->
                 <a href="<?php echo esc_url(get_post_type_archive_link('grant')); ?>" class="ji-btn ji-btn-primary">
                     <i class="fas fa-search"></i>
-                    <span>助成金を探す</span>
+                    <span>補助金・助成金を探す</span>
                 </a>
                 
                 <!-- Mobile Menu Button -->
@@ -1280,7 +1281,7 @@
                     <input type="text" 
                            id="ji-search-input"
                            name="search" 
-                           placeholder="助成金名、実施組織名、キーワードで検索..." 
+                           placeholder="補助金名・助成金名、実施組織名、キーワードで検索..." 
                            class="ji-search-input"
                            autocomplete="off"
                            aria-label="検索キーワード">
@@ -1362,11 +1363,11 @@
                 
                 <div class="ji-menu-grid">
                     <div class="ji-menu-column">
-                        <div class="ji-menu-column-title">助成金を探す</div>
-                        <a href="<?php echo esc_url($grants_url); ?>" class="ji-menu-item">すべての助成金</a>
-                        <a href="<?php echo esc_url(add_query_arg('application_status', 'open', $grants_url)); ?>" class="ji-menu-item">募集中の助成金</a>
+                        <div class="ji-menu-column-title">補助金・助成金を探す</div>
+                        <a href="<?php echo esc_url($grants_url); ?>" class="ji-menu-item">すべての補助金・助成金</a>
+                        <a href="<?php echo esc_url(add_query_arg('application_status', 'open', $grants_url)); ?>" class="ji-menu-item">募集中の補助金・助成金</a>
                         <a href="<?php echo esc_url(add_query_arg('orderby', 'deadline', $grants_url)); ?>" class="ji-menu-item">締切間近</a>
-                        <a href="<?php echo esc_url(add_query_arg('orderby', 'new', $grants_url)); ?>" class="ji-menu-item">新着助成金</a>
+                        <a href="<?php echo esc_url(add_query_arg('orderby', 'new', $grants_url)); ?>" class="ji-menu-item">新着補助金・助成金</a>
                     </div>
                     
                     <div class="ji-menu-column">
@@ -1446,8 +1447,8 @@
                 <div class="ji-section-title">便利なツール</div>
                 
                 <div class="ji-menu-grid">
-                    <a href="<?php echo esc_url($diagnosis_url); ?>" class="ji-menu-item" style="font-weight: 700;">助成金診断システム</a>
-                    <a href="<?php echo esc_url(home_url('/calculator/')); ?>" class="ji-menu-item" style="font-weight: 700;">助成金計算ツール</a>
+                    <a href="<?php echo esc_url($diagnosis_url); ?>" class="ji-menu-item" style="font-weight: 700;">補助金・助成金診断システム</a>
+                    <a href="<?php echo esc_url(home_url('/calculator/')); ?>" class="ji-menu-item" style="font-weight: 700;">補助金・助成金計算ツール</a>
                 </div>
             </div>
             
@@ -1461,15 +1462,15 @@
                 <div class="ji-menu-grid">
                     <div class="ji-menu-column">
                         <div class="ji-menu-column-title">初めての方へ</div>
-                        <a href="<?php echo esc_url($home_url); ?>" class="ji-menu-item">助成金インサイトとは</a>
+                        <a href="<?php echo esc_url($home_url); ?>" class="ji-menu-item">補助金・助成金インサイトとは</a>
                         <a href="<?php echo esc_url($how_to_use_url); ?>" class="ji-menu-item">使い方ガイド</a>
                         <a href="<?php echo esc_url(home_url('/faq/')); ?>" class="ji-menu-item">よくある質問</a>
                         <a href="<?php echo esc_url(home_url('/glossary/')); ?>" class="ji-menu-item">用語集</a>
                     </div>
                     
                     <div class="ji-menu-column">
-                        <div class="ji-menu-column-title">助成金の基礎知識</div>
-                        <a href="<?php echo esc_url(home_url('/knowledge/')); ?>" class="ji-menu-item">助成金とは</a>
+                        <div class="ji-menu-column-title">補助金・助成金の基礎知識</div>
+                        <a href="<?php echo esc_url(home_url('/knowledge/')); ?>" class="ji-menu-item">補助金・助成金とは</a>
                         <a href="<?php echo esc_url(home_url('/knowledge/how-to-apply/')); ?>" class="ji-menu-item">申請方法</a>
                         <a href="<?php echo esc_url(home_url('/knowledge/tips/')); ?>" class="ji-menu-item">採択のコツ</a>
                         <a href="<?php echo esc_url(home_url('/knowledge/common-mistakes/')); ?>" class="ji-menu-item">よくある失敗例</a>
@@ -1517,7 +1518,7 @@
             <!-- CTA Button -->
             <a href="<?php echo esc_url(get_post_type_archive_link('grant')); ?>" class="ji-mobile-cta">
                 <i class="fas fa-search"></i>
-                <span>助成金を探す</span>
+                <span>補助金・助成金を探す</span>
             </a>
             
             <!-- Stats Display -->
@@ -1569,8 +1570,8 @@
         <div class="ji-mobile-footer">
             <div class="ji-footer-badge">POWERED BY AI</div>
             <p class="ji-footer-text">
-                <strong>みんなの助成金情報プラットフォーム</strong><br>
-                最新の助成金情報を随時更新中
+                <strong>みんなの補助金・助成金情報プラットフォーム</strong><br>
+                最新の補助金・助成金情報を随時更新中
             </p>
         </div>
     </div>
@@ -1580,6 +1581,7 @@
 /**
  * Joseikin Insight - Full Width Mega Menu Header JavaScript
  * LYZON風 完全横幅展開メガメニュー対応
+ * 補助金・助成金対応版
  */
 (function() {
     'use strict';
@@ -1736,7 +1738,7 @@
         
         console.log('[✓] Joseikin Insight Header initialized');
         console.log('[✓] LYZON Style - Full Width Mega Menu Ready');
-        console.log('[✓] Version 6.2.0 - 個人向け対応版');
+        console.log('[✓] Version 6.3.0 - 補助金・助成金対応版');
     }
     
     if (document.readyState === 'loading') {
