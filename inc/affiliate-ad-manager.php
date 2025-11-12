@@ -222,7 +222,7 @@ class JI_Affiliate_Ad_Manager {
         }
         
         // CSS読み込みは theme-foundation.php で統合管理（admin.css）
-        wp_enqueue_script('ji-admin-ads', get_template_directory_uri() . '/assets/js/admin-ads.js', array('jquery'), '1.0.0', true);
+        // JS読み込みは theme-foundation.php で統合管理（admin.js）
         
         wp_localize_script('ji-admin-ads', 'jiAdminAds', array(
             'ajax_url' => admin_url('admin-ajax.php'),

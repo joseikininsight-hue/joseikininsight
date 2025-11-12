@@ -93,14 +93,7 @@ class GI_Grant_Amount_Fixer {
         
         // CSS読み込みは theme-foundation.php で統合管理（admin.css）
         
-        // スクリプト
-        wp_enqueue_script(
-            'gi-amount-fixer-js',
-            get_template_directory_uri() . '/assets/js/amount-fixer.js',
-            array('jquery'),
-            GI_THEME_VERSION,
-            true
-        );
+        // JS読み込みは theme-foundation.php で統合管理（admin.js）
         
         // Ajax設定を渡す
         wp_localize_script('gi-amount-fixer-js', 'giAmountFixer', array(

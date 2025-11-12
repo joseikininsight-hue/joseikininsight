@@ -4748,18 +4748,7 @@ class SheetsAdminUI {
             return;
         }
         
-        // JavaScriptファイルのパスを確認
-        $js_path = get_template_directory_uri() . '/assets/js/sheets-admin.js';
-        $js_file_path = get_template_directory() . '/assets/js/sheets-admin.js';
-        
-        
-        wp_enqueue_script(
-            'gi-sheets-admin',
-            $js_path,
-            array('jquery'),
-            GI_THEME_VERSION . '-' . time(), // Cache busting
-            true
-        );
+        // JS読み込みは theme-foundation.php で統合管理（admin.js）
         
         $localize_data = array(
             'ajaxurl' => admin_url('admin-ajax.php'),

@@ -132,12 +132,12 @@ function gi_enqueue_scripts() {
     // Google Fonts（日本語フォント）
     wp_enqueue_style('google-fonts-noto', 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap', array(), null);
     
-    // 統合フロントエンドJavaScript（jQuery不要のVanilla JS）
-    if (file_exists(get_template_directory() . '/assets/js/unified-frontend.js')) {
-        wp_enqueue_script('gi-unified-frontend', get_template_directory_uri() . '/assets/js/unified-frontend.js', array(), GI_THEME_VERSION, true);
+    // 統合フロントエンドJavaScript（最適化版 - unified + column + viewing-history統合）
+    if (file_exists(get_template_directory() . '/assets/js/frontend.js')) {
+        wp_enqueue_script('gi-frontend', get_template_directory_uri() . '/assets/js/frontend.js', array(), GI_THEME_VERSION, true);
         
         // AJAX設定
-        wp_localize_script('gi-unified-frontend', 'gi_ajax', array(
+        wp_localize_script('gi-frontend', 'gi_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('gi_ajax_nonce')
         ));
@@ -880,11 +880,11 @@ function gi_admin_assets() {
     // 管理画面統合CSS（最適化版 - admin-consolidated + amount-fixer + sheets-admin統合）
     wp_enqueue_style('gi-admin', get_template_directory_uri() . '/assets/css/admin.css', array(), GI_THEME_VERSION);
     
-    // 統合管理画面JavaScript読み込み
-    wp_enqueue_script('gi-admin-consolidated', get_template_directory_uri() . '/assets/js/admin-consolidated.js', array('jquery'), GI_THEME_VERSION, true);
+    // 統合管理画面JavaScript（最適化版 - admin-consolidated + amount-fixer + sheets-admin統合）
+    wp_enqueue_script('gi-admin', get_template_directory_uri() . '/assets/js/admin.js', array('jquery'), GI_THEME_VERSION, true);
     
     // JavaScript設定の出力
-    wp_localize_script('gi-admin-consolidated', 'giSheetsAdmin', array(
+    wp_localize_script('gi-admin', 'giSheetsAdmin', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('gi_admin_nonce'),
         'strings' => array(
@@ -894,7 +894,7 @@ function gi_admin_assets() {
         )
     ));
     
-    wp_localize_script('gi-admin-consolidated', 'grantMetaboxes', array(
+    wp_localize_script('gi-admin', 'grantMetaboxes', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('gi_metabox_nonce')
     ));

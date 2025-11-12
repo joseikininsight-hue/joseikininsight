@@ -1,4 +1,16 @@
 /*!
+ * Grant Insight Perfect - 管理画面統合JavaScript
+ * admin-consolidated.js + amount-fixer.js + sheets-admin.js
+ * 
+ * @version 2.0.0
+ * @date 2025-11-12
+ * @description 管理画面専用スクリプト（重複削除・最適化済み）
+ */
+
+// ============================================================================
+// PART 1: Main Admin Application (GrantInsightAdmin Namespace)
+// ============================================================================
+/*!
  * Grant Insight Perfect - 統合管理画面JavaScript
  * 管理画面専用スクリプト（メタボックス + Google Sheets管理）
  * 
@@ -1304,4 +1316,1027 @@ if (typeof giSheetsAdmin === 'undefined' && typeof window.giSheetsAdmin !== 'und
         console.log('[Duplicate Exporter] Initialization complete');
     });
 
+})(jQuery);
+
+
+// ============================================================================
+// PART 2: Google Sheets Integration Admin
+// ============================================================================
+/**
+ * Google Sheets Admin JavaScript
+ * スプレッドシート同期管理画面の機能
+ */
+
+(function($) {
+    'use strict';
+
+    /**
+     * Google Sheets Admin Controller
+     */
+    const GISheetsAdmin = {
+        /**
+         * 初期化
+         */
+        init() {
+            console.log('[GI Sheets Admin] Initializing...');
+            
+            if (typeof giSheetsAdmin === 'undefined') {
+                console.error('[GI Sheets Admin] giSheetsAdmin object not found');
+                return;
+            }
+            
+            this.bindEvents();
+            console.log('[GI Sheets Admin] Initialized successfully');
+        },
+
+        /**
+         * イベントバインディング
+         */
+        bindEvents() {
+            // 接続テストボタン
+            $('#gi-test-connection').on('click', (e) => {
+                e.preventDefault();
+                this.testConnection();
+            });
+
+            // WP to Sheets 同期ボタン
+            $('#gi-sync-wp-to-sheets').on('click', (e) => {
+                e.preventDefault();
+                this.syncData('wp_to_sheets');
+            });
+
+            // Sheets to WP 同期ボタン
+            $('#gi-sync-sheets-to-wp').on('click', (e) => {
+                e.preventDefault();
+                this.syncData('sheets_to_wp');
+            });
+            
+            // 都道府県データ検証・エクスポートボタン
+            $('#export-invalid-prefectures').on('click', (e) => {
+                e.preventDefault();
+                this.exportInvalidPrefectures();
+            });
+            
+            // タクソノミーエクスポートボタン
+            $('#export-taxonomies').on('click', (e) => {
+                e.preventDefault();
+                this.exportTaxonomies();
+            });
+            
+            // タクソノミーインポートボタン
+            $('#import-taxonomies').on('click', (e) => {
+                e.preventDefault();
+                this.importTaxonomies();
+            });
+        },
+
+        /**
+         * 接続テスト
+         */
+        testConnection() {
+            console.log('[GI Sheets Admin] Testing connection...');
+            
+            const $button = $('#gi-test-connection');
+            const $result = $('#gi-test-result');
+            
+            // ボタンを無効化
+            $button.prop('disabled', true);
+            $button.html('<span class="gi-loading-spinner"></span> ' + giSheetsAdmin.strings.testing);
+            
+            // 結果エリアをクリア
+            $result.removeClass('show gi-test-result-success gi-test-result-error').text('');
+            
+            // AJAX リクエスト
+            $.ajax({
+                url: giSheetsAdmin.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'gi_test_sheets_connection',
+                    nonce: giSheetsAdmin.nonce
+                },
+                success: (response) => {
+                    console.log('[GI Sheets Admin] Connection test response:', response);
+                    
+                    if (response.success) {
+                        $result
+                            .addClass('show gi-test-result-success')
+                            .html('<strong>✓ ' + giSheetsAdmin.strings.success + '</strong><br>' + response.data.message);
+                    } else {
+                        $result
+                            .addClass('show gi-test-result-error')
+                            .html('<strong>✗ ' + giSheetsAdmin.strings.error + '</strong><br>' + response.data.message);
+                    }
+                },
+                error: (xhr, status, error) => {
+                    console.error('[GI Sheets Admin] Connection test error:', error);
+                    $result
+                        .addClass('show gi-test-result-error')
+                        .html('<strong>✗ ' + giSheetsAdmin.strings.error + '</strong><br>AJAX エラー: ' + error);
+                },
+                complete: () => {
+                    // ボタンを再有効化
+                    $button.prop('disabled', false);
+                    $button.text('接続をテスト');
+                }
+            });
+        },
+
+        /**
+         * データ同期
+         */
+        syncData(direction) {
+            console.log('[GI Sheets Admin] Starting sync:', direction);
+            
+            // 確認ダイアログ
+            if (!confirm(giSheetsAdmin.strings.confirm_sync)) {
+                return;
+            }
+            
+            const $button = direction === 'wp_to_sheets' 
+                ? $('#gi-sync-wp-to-sheets') 
+                : $('#gi-sync-sheets-to-wp');
+            const $progressContainer = $('#gi-progress-container');
+            const $progressBar = $('#gi-progress-fill');
+            const $progressText = $('#gi-progress-text');
+            const $logContainer = $('#gi-log-messages');
+            
+            // ボタンを無効化
+            $button.prop('disabled', true);
+            $button.html('<span class="gi-loading-spinner"></span> ' + giSheetsAdmin.strings.syncing);
+            
+            // プログレスバーを表示
+            $progressContainer.show();
+            $progressBar.css('width', '0%');
+            $progressText.text('0%');
+            
+            // ログをクリア
+            $logContainer.empty();
+            
+            // AJAX リクエスト
+            $.ajax({
+                url: giSheetsAdmin.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'gi_manual_sheets_sync',
+                    direction: direction,
+                    nonce: giSheetsAdmin.nonce
+                },
+                success: (response) => {
+                    console.log('[GI Sheets Admin] Sync response:', response);
+                    
+                    if (response.success) {
+                        // 成功
+                        $progressBar.css('width', '100%');
+                        $progressText.text('100%');
+                        
+                        this.addLogEntry('success', response.data.message);
+                        
+                        if (response.data.details) {
+                            this.addLogEntry('info', '詳細: ' + JSON.stringify(response.data.details));
+                        }
+                        
+                        // 3秒後にプログレスバーを非表示
+                        setTimeout(() => {
+                            $progressContainer.fadeOut();
+                        }, 3000);
+                    } else {
+                        // エラー
+                        $progressBar.css('width', '100%');
+                        $progressText.text('エラー');
+                        $progressBar.css('background', '#d63638');
+                        
+                        this.addLogEntry('error', response.data.message || '同期に失敗しました');
+                        
+                        if (response.data.details) {
+                            this.addLogEntry('error', '詳細: ' + JSON.stringify(response.data.details));
+                        }
+                    }
+                },
+                error: (xhr, status, error) => {
+                    console.error('[GI Sheets Admin] Sync error:', error);
+                    
+                    $progressBar.css('width', '100%');
+                    $progressText.text('エラー');
+                    $progressBar.css('background', '#d63638');
+                    
+                    this.addLogEntry('error', 'AJAX エラー: ' + error);
+                    
+                    if (xhr.responseText) {
+                        this.addLogEntry('error', 'レスポンス: ' + xhr.responseText);
+                    }
+                },
+                complete: () => {
+                    // ボタンを再有効化
+                    $button.prop('disabled', false);
+                    
+                    if (direction === 'wp_to_sheets') {
+                        $button.html('<i class="dashicons dashicons-upload"></i> WP → Sheets 同期');
+                    } else {
+                        $button.html('<i class="dashicons dashicons-download"></i> Sheets → WP 同期');
+                    }
+                }
+            });
+        },
+
+        /**
+         * 都道府県データ検証・エクスポート
+         */
+        exportInvalidPrefectures() {
+            console.log('[GI Sheets Admin] Exporting invalid prefectures...');
+            console.log('[GI Sheets Admin] AJAX URL:', giSheetsAdmin.ajaxurl);
+            console.log('[GI Sheets Admin] Nonce:', giSheetsAdmin.nonce);
+            
+            if (!confirm('都道府県データの検証を実行し、問題のある投稿を「都道府県」シートにエクスポートします。よろしいですか？')) {
+                console.log('[GI Sheets Admin] User cancelled');
+                return;
+            }
+            
+            const $button = $('#export-invalid-prefectures');
+            const $result = $('#sync-result');
+            const $message = $('#sync-message');
+            
+            // ボタンを無効化
+            $button.prop('disabled', true).text('処理中...');
+            
+            // 結果エリアをクリア
+            $result.hide();
+            $message.text('');
+            
+            console.log('[GI Sheets Admin] Sending AJAX request...');
+            
+            // AJAX リクエスト
+            $.ajax({
+                url: giSheetsAdmin.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'gi_export_invalid_prefectures',
+                    nonce: giSheetsAdmin.nonce
+                },
+                beforeSend: function() {
+                    console.log('[GI Sheets Admin] AJAX request started');
+                },
+                success: (response) => {
+                    console.log('[GI Sheets Admin] SUCCESS - Response:', response);
+                    console.log('[GI Sheets Admin] Response type:', typeof response);
+                    console.log('[GI Sheets Admin] Response.success:', response.success);
+                    console.log('[GI Sheets Admin] Response.data:', response.data);
+                    
+                    if (response.success) {
+                        $result.removeClass('notice-error').addClass('notice-success');
+                        let message = response.data.message || response.data;
+                        if (response.data.count) {
+                            message += '<br>エクスポート件数: ' + response.data.count + '件';
+                        }
+                        if (response.data.spreadsheet_id) {
+                            message += '<br><a href="https://docs.google.com/spreadsheets/d/' + response.data.spreadsheet_id + '/edit#gid=0" target="_blank">スプレッドシートを開く</a>';
+                        }
+                        $message.html(message);
+                        console.log('[GI Sheets Admin] Success message displayed');
+                    } else {
+                        $result.removeClass('notice-success').addClass('notice-error');
+                        $message.text(response.data || 'エクスポートに失敗しました');
+                        console.log('[GI Sheets Admin] Error message displayed:', response.data);
+                    }
+                    
+                    $result.show();
+                },
+                error: (xhr, status, error) => {
+                    console.error('[GI Sheets Admin] ERROR - Status:', status);
+                    console.error('[GI Sheets Admin] ERROR - Error:', error);
+                    console.error('[GI Sheets Admin] ERROR - XHR:', xhr);
+                    console.error('[GI Sheets Admin] ERROR - Response Text:', xhr.responseText);
+                    console.error('[GI Sheets Admin] ERROR - Status Code:', xhr.status);
+                    console.error('[GI Sheets Admin] ERROR - Status Text:', xhr.statusText);
+                    
+                    // レスポンステキストをパースしてみる
+                    try {
+                        const parsedResponse = JSON.parse(xhr.responseText);
+                        console.error('[GI Sheets Admin] ERROR - Parsed Response:', parsedResponse);
+                    } catch (e) {
+                        console.error('[GI Sheets Admin] ERROR - Could not parse response as JSON');
+                        console.error('[GI Sheets Admin] ERROR - Raw response (first 500 chars):', xhr.responseText.substring(0, 500));
+                    }
+                    
+                    $result.removeClass('notice-success').addClass('notice-error');
+                    
+                    let errorMessage = 'エラーが発生しました: ' + error;
+                    if (xhr.status === 500) {
+                        errorMessage += '<br>サーバーエラー (500): PHPのエラーログを確認してください';
+                        if (xhr.responseText) {
+                            errorMessage += '<br>詳細: ' + xhr.responseText.substring(0, 200);
+                        }
+                    }
+                    
+                    $message.html(errorMessage);
+                    $result.show();
+                },
+                complete: () => {
+                    console.log('[GI Sheets Admin] AJAX request completed');
+                    // ボタンを再有効化
+                    $button.prop('disabled', false).text('🗾 都道府県データ検証・エクスポート');
+                }
+            });
+        },
+
+        /**
+         * タクソノミーエクスポート
+         */
+        exportTaxonomies() {
+            console.log('[GI Sheets Admin] Exporting taxonomies...');
+            
+            if (!confirm('カテゴリ、都道府県、市町村、タグのマスタデータをエクスポートします。よろしいですか？')) {
+                console.log('[GI Sheets Admin] User cancelled');
+                return;
+            }
+            
+            const $button = $('#export-taxonomies');
+            const $result = $('#sync-result');
+            const $message = $('#sync-message');
+            
+            // ボタンを無効化
+            $button.prop('disabled', true).text('エクスポート中...');
+            
+            // 結果エリアをクリア
+            $result.hide();
+            $message.html('');
+            
+            console.log('[GI Sheets Admin] Sending AJAX request...');
+            
+            // AJAX リクエスト
+            $.ajax({
+                url: giSheetsAdmin.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'gi_export_taxonomies',
+                    nonce: giSheetsAdmin.nonce
+                },
+                beforeSend: function() {
+                    console.log('[GI Sheets Admin] Export taxonomies AJAX started');
+                },
+                success: (response) => {
+                    console.log('[GI Sheets Admin] SUCCESS - Response:', response);
+                    
+                    if (response.success) {
+                        $result.removeClass('notice-error').addClass('notice-success');
+                        
+                        let message = '<strong>' + response.data.message + '</strong><br><br>';
+                        
+                        if (response.data.results && response.data.results.length > 0) {
+                            message += '<table style="width: 100%; border-collapse: collapse;">';
+                            message += '<thead><tr style="background: #f0f0f0;">';
+                            message += '<th style="padding: 8px; text-align: left; border: 1px solid #ddd;">タクソノミー</th>';
+                            message += '<th style="padding: 8px; text-align: left; border: 1px solid #ddd;">シート名</th>';
+                            message += '<th style="padding: 8px; text-align: center; border: 1px solid #ddd;">件数</th>';
+                            message += '<th style="padding: 8px; text-align: center; border: 1px solid #ddd;">ステータス</th>';
+                            message += '</tr></thead><tbody>';
+                            
+                            response.data.results.forEach((result) => {
+                                const status = result.success ? '✅ 成功' : '❌ 失敗';
+                                const statusColor = result.success ? '#00a32a' : '#d63638';
+                                message += '<tr>';
+                                message += '<td style="padding: 8px; border: 1px solid #ddd;">' + result.taxonomy + '</td>';
+                                message += '<td style="padding: 8px; border: 1px solid #ddd;">' + result.sheet_name + '</td>';
+                                message += '<td style="padding: 8px; text-align: center; border: 1px solid #ddd;">' + result.count + '</td>';
+                                message += '<td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: ' + statusColor + ';"><strong>' + status + '</strong></td>';
+                                message += '</tr>';
+                                
+                                if (result.error) {
+                                    message += '<tr><td colspan="4" style="padding: 8px; border: 1px solid #ddd; color: #d63638;">エラー: ' + result.error + '</td></tr>';
+                                }
+                            });
+                            
+                            message += '</tbody></table>';
+                        }
+                        
+                        $message.html(message);
+                    } else {
+                        $result.removeClass('notice-success').addClass('notice-error');
+                        
+                        let errorMsg = response.data.message || 'エクスポートに失敗しました';
+                        
+                        if (response.data.results) {
+                            errorMsg += '<br><br><strong>詳細:</strong><br>';
+                            response.data.results.forEach((result) => {
+                                errorMsg += '- ' + result.taxonomy + ': ' + (result.error || '不明なエラー') + '<br>';
+                            });
+                        }
+                        
+                        $message.html(errorMsg);
+                    }
+                    
+                    $result.show();
+                },
+                error: (xhr, status, error) => {
+                    console.error('[GI Sheets Admin] ERROR - XHR:', xhr);
+                    console.error('[GI Sheets Admin] ERROR - Status:', status);
+                    console.error('[GI Sheets Admin] ERROR - Error:', error);
+                    
+                    $result.removeClass('notice-success').addClass('notice-error');
+                    $message.html('エラーが発生しました: ' + error);
+                    $result.show();
+                },
+                complete: () => {
+                    console.log('[GI Sheets Admin] Export taxonomies completed');
+                    $button.prop('disabled', false).text('📊 タクソノミーをエクスポート');
+                }
+            });
+        },
+
+        /**
+         * タクソノミーインポート
+         */
+        importTaxonomies() {
+            console.log('[GI Sheets Admin] Importing taxonomies...');
+            
+            if (!confirm('スプレッドシートからタクソノミーをインポートします。\n\n⚠️ 注意: 既存のタクソノミーが更新される可能性があります。\n削除する場合は名前列に「DELETE」または「削除」と入力してください。\n\nよろしいですか？')) {
+                console.log('[GI Sheets Admin] User cancelled');
+                return;
+            }
+            
+            const $button = $('#import-taxonomies');
+            const $result = $('#sync-result');
+            const $message = $('#sync-message');
+            
+            // ボタンを無効化
+            $button.prop('disabled', true).text('インポート中...');
+            
+            // 結果エリアをクリア
+            $result.hide();
+            $message.html('');
+            
+            console.log('[GI Sheets Admin] Sending AJAX request...');
+            
+            // AJAX リクエスト
+            $.ajax({
+                url: giSheetsAdmin.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'gi_import_taxonomies',
+                    nonce: giSheetsAdmin.nonce
+                },
+                beforeSend: function() {
+                    console.log('[GI Sheets Admin] Import taxonomies AJAX started');
+                },
+                success: (response) => {
+                    console.log('[GI Sheets Admin] SUCCESS - Response:', response);
+                    
+                    if (response.success) {
+                        $result.removeClass('notice-error').addClass('notice-success');
+                        
+                        let message = '<strong>' + response.data.message + '</strong><br><br>';
+                        
+                        if (response.data.results && response.data.results.length > 0) {
+                            message += '<table style="width: 100%; border-collapse: collapse;">';
+                            message += '<thead><tr style="background: #f0f0f0;">';
+                            message += '<th style="padding: 8px; text-align: left; border: 1px solid #ddd;">タクソノミー</th>';
+                            message += '<th style="padding: 8px; text-align: left; border: 1px solid #ddd;">シート名</th>';
+                            message += '<th style="padding: 8px; text-align: center; border: 1px solid #ddd;">新規作成</th>';
+                            message += '<th style="padding: 8px; text-align: center; border: 1px solid #ddd;">更新</th>';
+                            message += '<th style="padding: 8px; text-align: center; border: 1px solid #ddd;">削除</th>';
+                            message += '<th style="padding: 8px; text-align: center; border: 1px solid #ddd;">スキップ</th>';
+                            message += '</tr></thead><tbody>';
+                            
+                            response.data.results.forEach((result) => {
+                                message += '<tr>';
+                                message += '<td style="padding: 8px; border: 1px solid #ddd;">' + result.taxonomy + '</td>';
+                                message += '<td style="padding: 8px; border: 1px solid #ddd;">' + result.sheet_name + '</td>';
+                                message += '<td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: #00a32a;"><strong>' + result.created + '</strong></td>';
+                                message += '<td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: #0073aa;"><strong>' + result.updated + '</strong></td>';
+                                message += '<td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: #d63638;"><strong>' + result.deleted + '</strong></td>';
+                                message += '<td style="padding: 8px; text-align: center; border: 1px solid #ddd; color: #999;"><strong>' + result.skipped + '</strong></td>';
+                                message += '</tr>';
+                                
+                                if (result.errors && result.errors.length > 0) {
+                                    message += '<tr><td colspan="6" style="padding: 8px; border: 1px solid #ddd; color: #d63638;">';
+                                    message += '<strong>エラー:</strong><br>';
+                                    result.errors.forEach((err) => {
+                                        message += '- ' + err + '<br>';
+                                    });
+                                    message += '</td></tr>';
+                                }
+                                
+                                if (result.error) {
+                                    message += '<tr><td colspan="6" style="padding: 8px; border: 1px solid #ddd; color: #d63638;">エラー: ' + result.error + '</td></tr>';
+                                }
+                            });
+                            
+                            message += '</tbody></table>';
+                        }
+                        
+                        $message.html(message);
+                    } else {
+                        $result.removeClass('notice-success').addClass('notice-error');
+                        $message.html(response.data || 'インポートに失敗しました');
+                    }
+                    
+                    $result.show();
+                },
+                error: (xhr, status, error) => {
+                    console.error('[GI Sheets Admin] ERROR - XHR:', xhr);
+                    console.error('[GI Sheets Admin] ERROR - Status:', status);
+                    console.error('[GI Sheets Admin] ERROR - Error:', error);
+                    
+                    $result.removeClass('notice-success').addClass('notice-error');
+                    $message.html('エラーが発生しました: ' + error);
+                    $result.show();
+                },
+                complete: () => {
+                    console.log('[GI Sheets Admin] Import taxonomies completed');
+                    $button.prop('disabled', false).text('📥 タクソノミーをインポート');
+                }
+            });
+        },
+        
+        /**
+         * ログエントリーを追加
+         */
+        addLogEntry(type, message) {
+            const $logContainer = $('#gi-log-messages');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            
+            let typeClass = '';
+            let typeIcon = '';
+            
+            switch(type) {
+                case 'success':
+                    typeClass = 'gi-log-success';
+                    typeIcon = '✓';
+                    break;
+                case 'error':
+                    typeClass = 'gi-log-error';
+                    typeIcon = '✗';
+                    break;
+                case 'warning':
+                    typeClass = 'gi-log-warning';
+                    typeIcon = '⚠';
+                    break;
+                default:
+                    typeClass = 'gi-log-message';
+                    typeIcon = 'ℹ';
+            }
+            
+            const $entry = $('<div class="gi-log-entry">')
+                .html(
+                    '<span class="gi-log-timestamp">[' + timestamp + ']</span>' +
+                    '<span class="' + typeClass + '">' + typeIcon + ' ' + message + '</span>'
+                );
+            
+            $logContainer.prepend($entry);
+            
+            // 最大50エントリーまで保持
+            if ($logContainer.children().length > 50) {
+                $logContainer.children().last().remove();
+            }
+        }
+    };
+
+    // ドキュメント読み込み完了時に初期化
+    $(document).ready(() => {
+        GISheetsAdmin.init();
+    });
+
+})(jQuery);
+
+
+
+// ============================================================================
+// PART 3: Grant Amount Fixer Tool
+// ============================================================================
+/**
+ * Grant Amount Fixer - JavaScript
+ * 助成金額修正ツールのフロントエンド処理
+ * 
+ * @package Grant_Insight_Perfect
+ * @version 1.0.0
+ */
+
+(function($) {
+    'use strict';
+    
+    // 状態管理
+    let scanResults = null;
+    let selectedPostIds = [];
+    
+    /**
+     * 初期化
+     */
+    $(document).ready(function() {
+        initEventHandlers();
+    });
+    
+    /**
+     * イベントハンドラー初期化
+     */
+    function initEventHandlers() {
+        // スキャンボタン
+        $('#gi-scan-btn').on('click', handleScan);
+        
+        // 修正ボタン
+        $('#gi-fix-btn').on('click', handleFix);
+        
+        // 全選択チェックボックス
+        $(document).on('change', '#gi-select-all', handleSelectAll);
+        
+        // 個別選択チェックボックス
+        $(document).on('change', '.gi-post-checkbox', handlePostSelection);
+    }
+    
+    /**
+     * スキャン処理
+     */
+    function handleScan() {
+        const $button = $('#gi-scan-btn');
+        const $progress = $('#gi-scan-progress');
+        const $results = $('#gi-scan-results');
+        
+        // ボタン無効化
+        $button.prop('disabled', true);
+        
+        // プログレスバー表示
+        $progress.show();
+        updateProgress($progress, 0, 'スキャン中...');
+        
+        // 結果エリアをクリア
+        $results.hide().empty();
+        
+        // AJAX実行
+        $.ajax({
+            url: giAmountFixer.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'gi_scan_grant_amounts',
+                nonce: giAmountFixer.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    scanResults = response.data;
+                    displayScanResults(response.data);
+                    updateProgress($progress, 100, 'スキャン完了');
+                    
+                    setTimeout(function() {
+                        $progress.fadeOut();
+                    }, 1000);
+                } else {
+                    showError('スキャンに失敗しました: ' + (response.data.message || '不明なエラー'));
+                }
+            },
+            error: function(xhr, status, error) {
+                showError('通信エラーが発生しました: ' + error);
+            },
+            complete: function() {
+                $button.prop('disabled', false);
+            }
+        });
+    }
+    
+    /**
+     * スキャン結果表示
+     */
+    function displayScanResults(data) {
+        const $results = $('#gi-scan-results');
+        
+        let html = '<div class="gi-scan-summary">';
+        html += '<h3>スキャン結果</h3>';
+        html += '<p>スキャンした投稿数: <strong>' + data.total_scanned + '</strong></p>';
+        html += '<p>修正が必要な投稿数: <strong class="gi-highlight">' + data.problematic_count + '</strong></p>';
+        html += '</div>';
+        
+        if (data.problematic_count > 0) {
+            html += '<div class="gi-post-list">';
+            html += '<h4>修正対象の投稿</h4>';
+            html += '<div class="gi-select-all-wrapper">';
+            html += '<label><input type="checkbox" id="gi-select-all" checked> すべて選択</label>';
+            html += '</div>';
+            html += '<table class="wp-list-table widefat fixed striped">';
+            html += '<thead><tr>';
+            html += '<th class="check-column"><input type="checkbox" id="gi-select-all-header" checked></th>';
+            html += '<th>投稿タイトル</th>';
+            html += '<th>問題のあるフィールド</th>';
+            html += '<th>現在の値</th>';
+            html += '<th>修正後の値</th>';
+            html += '</tr></thead>';
+            html += '<tbody>';
+            
+            $.each(data.problematic_posts, function(postId, postData) {
+                const issuesHtml = postData.issues.map(function(issue) {
+                    const fieldLabel = getFieldLabel(issue.field);
+                    return '<div class="gi-issue">' +
+                           '<strong>' + fieldLabel + ':</strong> ' +
+                           '<span class="gi-old-value">' + formatNumber(issue.current_value) + '</span> → ' +
+                           '<span class="gi-new-value">' + formatNumber(issue.suggested_value) + '</span>' +
+                           '</div>';
+                }).join('');
+                
+                html += '<tr>';
+                html += '<td class="check-column"><input type="checkbox" class="gi-post-checkbox" value="' + postId + '" checked></td>';
+                html += '<td><strong>' + escapeHtml(postData.title) + '</strong><br><small>ID: ' + postId + '</small></td>';
+                html += '<td>' + postData.issues.length + '個</td>';
+                html += '<td>' + postData.issues.map(i => formatNumber(i.current_value)).join('<br>') + '</td>';
+                html += '<td>' + postData.issues.map(i => formatNumber(i.suggested_value)).join('<br>') + '</td>';
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            html += '</div>';
+            
+            // プレビューボタン
+            html += '<div class="gi-action-buttons">';
+            html += '<button id="gi-preview-btn" class="button button-primary">修正内容をプレビュー</button>';
+            html += '</div>';
+        } else {
+            html += '<div class="gi-info-box">';
+            html += '<p>修正が必要な投稿は見つかりませんでした。すべての金額は正常です。</p>';
+            html += '</div>';
+        }
+        
+        $results.html(html).fadeIn();
+        
+        // 選択状態の初期化
+        selectedPostIds = Object.keys(data.problematic_posts).map(id => parseInt(id));
+        
+        // プレビューボタンのイベント
+        $('#gi-preview-btn').on('click', handlePreview);
+        
+        // ヘッダーチェックボックスのイベント
+        $('#gi-select-all-header').on('change', function() {
+            $('#gi-select-all').prop('checked', $(this).prop('checked')).trigger('change');
+        });
+    }
+    
+    /**
+     * プレビュー処理
+     */
+    function handlePreview() {
+        if (selectedPostIds.length === 0) {
+            showError('修正する投稿を選択してください');
+            return;
+        }
+        
+        const $button = $('#gi-preview-btn');
+        $button.prop('disabled', true).text('プレビュー生成中...');
+        
+        $.ajax({
+            url: giAmountFixer.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'gi_preview_fix',
+                nonce: giAmountFixer.nonce,
+                post_ids: selectedPostIds
+            },
+            success: function(response) {
+                if (response.success) {
+                    displayPreview(response.data.preview);
+                    $('#gi-fix-section').fadeIn();
+                    
+                    // プレビューセクションまでスクロール
+                    $('html, body').animate({
+                        scrollTop: $('#gi-preview-section').offset().top - 50
+                    }, 500);
+                } else {
+                    showError('プレビュー生成に失敗しました: ' + (response.data.message || '不明なエラー'));
+                }
+            },
+            error: function(xhr, status, error) {
+                showError('通信エラーが発生しました: ' + error);
+            },
+            complete: function() {
+                $button.prop('disabled', false).text('修正内容をプレビュー');
+            }
+        });
+    }
+    
+    /**
+     * プレビュー表示
+     */
+    function displayPreview(previewData) {
+        const $preview = $('#gi-preview-section');
+        let html = '<table class="wp-list-table widefat fixed striped gi-preview-table">';
+        html += '<thead><tr>';
+        html += '<th>投稿タイトル</th>';
+        html += '<th>フィールド</th>';
+        html += '<th>現在の値</th>';
+        html += '<th></th>';
+        html += '<th>修正後の値</th>';
+        html += '</tr></thead>';
+        html += '<tbody>';
+        
+        $.each(previewData, function(postId, data) {
+            let rowspan = Object.keys(data.current).length;
+            let first = true;
+            
+            $.each(data.current, function(field, currentValue) {
+                html += '<tr>';
+                
+                if (first) {
+                    html += '<td rowspan="' + rowspan + '"><strong>' + escapeHtml(data.title) + '</strong></td>';
+                    first = false;
+                }
+                
+                html += '<td>' + getFieldLabel(field) + '</td>';
+                html += '<td class="gi-old-value">' + formatNumber(currentValue) + '</td>';
+                html += '<td class="gi-arrow">→</td>';
+                html += '<td class="gi-new-value">' + formatNumber(data.fixed[field]) + '</td>';
+                html += '</tr>';
+            });
+        });
+        
+        html += '</tbody></table>';
+        
+        $('#gi-preview-results').html(html);
+        $preview.fadeIn();
+    }
+    
+    /**
+     * 修正実行処理
+     */
+    function handleFix() {
+        if (selectedPostIds.length === 0) {
+            showError('修正する投稿を選択してください');
+            return;
+        }
+        
+        // 確認ダイアログ
+        if (!confirm('選択した ' + selectedPostIds.length + ' 件の投稿を修正します。\n\nこの操作は元に戻せません。実行しますか？')) {
+            return;
+        }
+        
+        const $button = $('#gi-fix-btn');
+        const $progress = $('#gi-fix-progress');
+        const $results = $('#gi-fix-results');
+        
+        // ボタン無効化
+        $button.prop('disabled', true);
+        
+        // プログレスバー表示
+        $progress.show();
+        updateProgress($progress, 0, '修正中...');
+        
+        // 結果エリアをクリア
+        $results.hide().empty();
+        
+        // AJAX実行
+        $.ajax({
+            url: giAmountFixer.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'gi_fix_grant_amounts',
+                nonce: giAmountFixer.nonce,
+                post_ids: selectedPostIds
+            },
+            success: function(response) {
+                if (response.success) {
+                    updateProgress($progress, 100, '修正完了');
+                    displayFixResults(response.data);
+                    
+                    setTimeout(function() {
+                        $progress.fadeOut();
+                        $('#gi-complete-section').fadeIn();
+                        
+                        // 完了セクションまでスクロール
+                        $('html, body').animate({
+                            scrollTop: $('#gi-complete-section').offset().top - 50
+                        }, 500);
+                    }, 1000);
+                } else {
+                    showError('修正に失敗しました: ' + (response.data.message || '不明なエラー'));
+                }
+            },
+            error: function(xhr, status, error) {
+                showError('通信エラーが発生しました: ' + error);
+            },
+            complete: function() {
+                $button.prop('disabled', false);
+            }
+        });
+    }
+    
+    /**
+     * 修正結果表示
+     */
+    function displayFixResults(data) {
+        const $results = $('#gi-fix-results');
+        
+        let html = '<div class="gi-fix-summary">';
+        html += '<h3>修正結果</h3>';
+        html += '<p>成功: <strong class="gi-success">' + data.success_count + '件</strong></p>';
+        if (data.error_count > 0) {
+            html += '<p>失敗: <strong class="gi-error">' + data.error_count + '件</strong></p>';
+        }
+        html += '</div>';
+        
+        html += '<div class="gi-results-detail">';
+        html += '<h4>詳細</h4>';
+        html += '<ul>';
+        
+        $.each(data.results, function(postId, result) {
+            if (result.success) {
+                html += '<li class="gi-success-item">';
+                html += '<span class="dashicons dashicons-yes-alt"></span>';
+                html += '<strong>' + escapeHtml(result.title) + '</strong> - ';
+                html += Object.keys(result.fixed_fields).length + '個のフィールドを修正';
+                html += '</li>';
+            } else {
+                html += '<li class="gi-error-item">';
+                html += '<span class="dashicons dashicons-warning"></span>';
+                html += '<strong>' + escapeHtml(result.title) + '</strong> - ' + result.error;
+                html += '</li>';
+            }
+        });
+        
+        html += '</ul>';
+        html += '</div>';
+        
+        $results.html(html).fadeIn();
+    }
+    
+    /**
+     * 全選択処理
+     */
+    function handleSelectAll() {
+        const checked = $(this).prop('checked');
+        $('.gi-post-checkbox').prop('checked', checked);
+        updateSelectedPostIds();
+    }
+    
+    /**
+     * 個別選択処理
+     */
+    function handlePostSelection() {
+        updateSelectedPostIds();
+        
+        // 全選択チェックボックスの状態更新
+        const allChecked = $('.gi-post-checkbox').length === $('.gi-post-checkbox:checked').length;
+        $('#gi-select-all, #gi-select-all-header').prop('checked', allChecked);
+    }
+    
+    /**
+     * 選択投稿ID更新
+     */
+    function updateSelectedPostIds() {
+        selectedPostIds = [];
+        $('.gi-post-checkbox:checked').each(function() {
+            selectedPostIds.push(parseInt($(this).val()));
+        });
+    }
+    
+    /**
+     * プログレスバー更新
+     */
+    function updateProgress($container, percentage, text) {
+        $container.find('.gi-progress-fill').css('width', percentage + '%');
+        $container.find('.gi-progress-text').text(text);
+    }
+    
+    /**
+     * エラー表示
+     */
+    function showError(message) {
+        const $error = $('<div class="notice notice-error is-dismissible"><p>' + escapeHtml(message) + '</p></div>');
+        $('.gi-amount-fixer h1').after($error);
+        
+        // 自動削除
+        setTimeout(function() {
+            $error.fadeOut(function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+    
+    /**
+     * フィールドラベル取得
+     */
+    function getFieldLabel(fieldName) {
+        const labels = {
+            'grant_amount_max': '助成金額上限',
+            'grant_amount_min': '助成金額下限',
+            'subsidy_rate_max': '補助率上限',
+            'subsidy_rate_min': '補助率下限'
+        };
+        return labels[fieldName] || fieldName;
+    }
+    
+    /**
+     * 数値フォーマット
+     */
+    function formatNumber(num) {
+        if (num === null || num === undefined || num === '') {
+            return '-';
+        }
+        return parseFloat(num).toLocaleString('ja-JP');
+    }
+    
+    /**
+     * HTMLエスケープ
+     */
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+    
 })(jQuery);
