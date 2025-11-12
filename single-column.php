@@ -1,21 +1,15 @@
 <?php
 /**
- * Single Column Template - Enhanced SEO & Wide Sidebar
+ * Single Column Template - Enhanced SEO & Wide Sidebar v5.1
  * コラム記事詳細ページ - SEO最適化 + ワイドサイドバー
  * 
- * 関連補助金連携:
- * - ACFの「related_grants」フィールドで手動設定された補助金を優先表示
- * - 設定がない場合、コラムカテゴリに基づいて自動的に関連補助金を表示
- * - サイドバー（PC）とメインコンテンツ下部（モバイル）の両方に表示
- * 
- * UX改善（v5.0.0）:
- * - 記事直後に最強CTA（AI診断・補助金検索）を設置 - コンバージョン最適化
- * - 「この記事はこんな方におすすめ」を記事冒頭に移動 - 結論ファースト
- * - サイドバー順序: 目次→関連補助金→人気記事→AIチャット（UX優先）
+ * Version: 5.1.0
+ * - 視認性向上: サイドバーのコントラスト改善
+ * - UX改善: セクション名を「このコラムの補助金情報はこちら」に変更
+ * - SEO強化: 構造化データ追加、メタ情報最適化
  * 
  * @package Grant_Insight_Perfect
  * @subpackage Column_System
- * @version 5.0.0 - UX Optimization: Target Audience First & Strong CTA
  */
 
 get_header();
@@ -42,6 +36,12 @@ $post_date = get_the_date('c');
 $post_modified = get_the_modified_date('c');
 $author_name = get_the_author();
 
+// SEO: メタディスクリプション最適化
+$meta_description = $post_excerpt;
+if (strlen($meta_description) > 160) {
+    $meta_description = mb_substr($meta_description, 0, 157) . '...';
+}
+
 // 関連コラムを取得
 $related_query = new WP_Query(array(
     'post_type' => 'column',
@@ -52,21 +52,18 @@ $related_query = new WP_Query(array(
 ));
 
 // 関連補助金を取得
-// 優先度1: ACFの「related_grants」フィールドから取得
 $acf_related_grants = get_field('related_grants', $post_id);
 $related_grants_query = null;
 
 if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
-    // ACFで手動設定された関連補助金がある場合
     $related_grants_query = new WP_Query(array(
         'post_type' => 'grant',
         'post__in' => $acf_related_grants,
         'posts_per_page' => 4,
         'post_status' => 'publish',
-        'orderby' => 'post__in', // ACFの順序を維持
+        'orderby' => 'post__in',
     ));
 } else {
-    // 優先度2: カテゴリベースの自動関連付け
     $related_grants_args = array(
         'post_type' => 'grant',
         'posts_per_page' => 4,
@@ -74,13 +71,11 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         'orderby' => 'rand',
     );
     
-    // カテゴリーがあれば関連付ける
     if ($categories && !is_wp_error($categories) && !empty($categories)) {
         $category_names = array_map(function($cat) {
             return $cat->name;
         }, $categories);
         
-        // コラムカテゴリーに基づいて助成金カテゴリーを検索
         $related_grants_args['tax_query'] = array(
             array(
                 'taxonomy' => 'grant_category',
@@ -105,22 +100,28 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
       "@type": "ListItem",
       "position": 1,
       "name": "ホーム",
-      "item": "<?php echo home_url('/'); ?>"
+      "item": "<?php echo esc_js(home_url('/')); ?>"
     },
     {
       "@type": "ListItem",
       "position": 2,
       "name": "コラム",
-      "item": "<?php echo get_post_type_archive_link('column'); ?>"
+      "item": "<?php echo esc_js(get_post_type_archive_link('column')); ?>"
     }
     <?php if ($categories && !is_wp_error($categories)): ?>
     ,{
       "@type": "ListItem",
       "position": 3,
       "name": "<?php echo esc_js($categories[0]->name); ?>",
-      "item": "<?php echo get_term_link($categories[0]); ?>"
+      "item": "<?php echo esc_js(get_term_link($categories[0])); ?>"
     }
     <?php endif; ?>
+    ,{
+      "@type": "ListItem",
+      "position": <?php echo $categories ? 4 : 3; ?>,
+      "name": "<?php echo esc_js($post_title); ?>",
+      "item": "<?php echo esc_js($post_url); ?>"
+    }
   ]
 }
 </script>
@@ -131,7 +132,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": "<?php echo esc_js($post_title); ?>",
-  "description": "<?php echo esc_js($post_excerpt); ?>",
+  "description": "<?php echo esc_js($meta_description); ?>",
   "image": "<?php echo esc_url($post_image); ?>",
   "datePublished": "<?php echo $post_date; ?>",
   "dateModified": "<?php echo $post_modified; ?>",
@@ -154,14 +155,19 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
   <?php if ($read_time): ?>
   ,"timeRequired": "PT<?php echo intval($read_time); ?>M"
   <?php endif; ?>
+  <?php if ($categories && !is_wp_error($categories)): ?>
+  ,"articleSection": "<?php echo esc_js($categories[0]->name); ?>"
+  <?php endif; ?>
+  <?php if ($tags && !is_wp_error($tags)): ?>
+  ,"keywords": "<?php echo esc_js(implode(', ', wp_list_pluck($tags, 'name'))); ?>"
+  <?php endif; ?>
 }
 </script>
 
 <!-- SEO: OGPメタタグ -->
-<?php if (!function_exists('wp_head_has_ogp')): ?>
 <meta property="og:type" content="article">
 <meta property="og:title" content="<?php echo esc_attr($post_title); ?>">
-<meta property="og:description" content="<?php echo esc_attr($post_excerpt); ?>">
+<meta property="og:description" content="<?php echo esc_attr($meta_description); ?>">
 <meta property="og:url" content="<?php echo esc_url($post_url); ?>">
 <meta property="og:image" content="<?php echo esc_url($post_image); ?>">
 <meta property="og:site_name" content="<?php echo esc_attr(get_bloginfo('name')); ?>">
@@ -169,16 +175,17 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 <meta property="article:modified_time" content="<?php echo $post_modified; ?>">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="<?php echo esc_attr($post_title); ?>">
-<meta name="twitter:description" content="<?php echo esc_attr($post_excerpt); ?>">
+<meta name="twitter:description" content="<?php echo esc_attr($meta_description); ?>">
 <meta name="twitter:image" content="<?php echo esc_url($post_image); ?>">
-<?php endif; ?>
 
-<!-- Single Column - SEO Enhanced -->
+<!-- SEO: Canonical URL -->
+<link rel="canonical" href="<?php echo esc_url($post_url); ?>">
+
 <article id="post-<?php the_ID(); ?>" <?php post_class('single-column-seo-enhanced'); ?> itemscope itemtype="https://schema.org/Article">
     
     <!-- SEO: 非表示のメタデータ -->
     <meta itemprop="headline" content="<?php echo esc_attr($post_title); ?>">
-    <meta itemprop="description" content="<?php echo esc_attr($post_excerpt); ?>">
+    <meta itemprop="description" content="<?php echo esc_attr($meta_description); ?>">
     <meta itemprop="image" content="<?php echo esc_url($post_image); ?>">
     <meta itemprop="datePublished" content="<?php echo $post_date; ?>">
     <meta itemprop="dateModified" content="<?php echo $post_modified; ?>">
@@ -194,10 +201,8 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     
     <div class="column-layout-container">
         
-        <!-- メインコンテンツ -->
         <main class="column-main-content" role="main">
             
-            <!-- ヘッダーセクション -->
             <header class="column-header-section">
                 
                 <!-- パンくずリスト -->
@@ -279,7 +284,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                     <?php if ($read_time): ?>
                         <div class="meta-item">
                             <i class="fas fa-clock" aria-hidden="true"></i>
-                            <span><?php echo esc_html($read_time); ?>分</span>
+                            <span><?php echo esc_html($read_time); ?>分で読めます</span>
                         </div>
                     <?php endif; ?>
                     
@@ -291,7 +296,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
             </header>
 
-            <!-- 対象読者（結論ファースト：記事の最上部に配置） -->
+            <!-- 対象読者 -->
             <?php if ($target_audience && is_array($target_audience) && count($target_audience) > 0): ?>
                 <aside class="target-audience-box" aria-label="対象読者">
                     <h2 class="box-title">
@@ -323,9 +328,17 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             <!-- アイキャッチ画像 -->
             <?php if (has_post_thumbnail()): ?>
                 <figure class="column-thumbnail" itemprop="image" itemscope itemtype="https://schema.org/ImageObject">
-                    <?php the_post_thumbnail('large', array('itemprop' => 'url contentUrl')); ?>
-                    <meta itemprop="width" content="<?php echo get_the_post_thumbnail_url($post_id, 'large') ? '1200' : ''; ?>">
-                    <meta itemprop="height" content="<?php echo get_the_post_thumbnail_url($post_id, 'large') ? '630' : ''; ?>">
+                    <?php 
+                    $thumbnail_id = get_post_thumbnail_id();
+                    $thumbnail_alt = get_post_meta($thumbnail_id, '_wp_attachment_image_alt', true);
+                    $thumbnail_alt = $thumbnail_alt ? $thumbnail_alt : $post_title;
+                    ?>
+                    <?php the_post_thumbnail('large', array(
+                        'itemprop' => 'url contentUrl',
+                        'alt' => esc_attr($thumbnail_alt)
+                    )); ?>
+                    <meta itemprop="width" content="1200">
+                    <meta itemprop="height" content="630">
                 </figure>
             <?php endif; ?>
 
@@ -334,12 +347,12 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 <?php the_content(); ?>
             </div>
 
-            <!-- 記事終了後の最強CTAボックス - UX最適化版（AI診断 + 補助金検索） -->
+            <!-- 記事終了後の最強CTAボックス -->
             <section class="gus-cta-section" style="margin-top: var(--gus-space-2xl); margin-bottom: var(--gus-space-2xl);" role="complementary" aria-label="次のアクション">
                 <div class="gus-cta-container">
                     <div class="gus-cta-content">
                         <div class="gus-cta-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                                 <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -356,7 +369,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                             <a href="<?php echo home_url('/subsidy-diagnosis/'); ?>" 
                                class="gus-cta-btn gus-cta-btn-primary"
                                aria-label="AIで最適な補助金を診断">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path d="M9 11l3 3L22 4"/>
                                     <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                                 </svg>
@@ -368,7 +381,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                             <a href="<?php echo home_url('/grants/'); ?>" 
                                class="gus-cta-btn gus-cta-btn-secondary"
                                aria-label="補助金一覧から探す">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <circle cx="11" cy="11" r="8"/>
                                     <path d="m21 21-4.35-4.35"/>
                                 </svg>
@@ -387,7 +400,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 <nav class="column-tags" aria-label="タグ">
                     <h2 class="tags-title">
                         <i class="fas fa-tags" aria-hidden="true"></i>
-                        タグ
+                        関連タグ
                     </h2>
                     <div class="tags-list">
                         <?php foreach ($tags as $tag): ?>
@@ -430,7 +443,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 </div>
             </aside>
 
-            <!-- スマホ用: 関連する補助金 -->
+            <!-- スマホ用: このコラムの補助金情報 -->
             <?php if ($related_grants_query && $related_grants_query->have_posts()): ?>
             <section class="mobile-related-grants" aria-labelledby="mobile-related-grants-title">
                 <h2 class="section-title" id="mobile-related-grants-title">
@@ -439,11 +452,10 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                         <circle cx="12" cy="12" r="2" fill="currentColor"/>
                     </svg>
-                    この記事に関連する補助金
+                    このコラムの補助金情報はこちら
                 </h2>
                 <div class="mobile-grants-grid">
                     <?php 
-                    // モバイル用は2件表示
                     $count = 0;
                     while ($related_grants_query->have_posts() && $count < 2): $related_grants_query->the_post(); 
                         $grant_id = get_the_ID();
@@ -482,7 +494,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 </div>
                 <a href="<?php echo home_url('/grants/'); ?>" class="mobile-view-all-grants">
                     すべての補助金を見る
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <line x1="5" y1="12" x2="19" y2="12"/>
                         <polyline points="12 5 19 12 12 19"/>
                     </svg>
@@ -495,7 +507,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 <section class="related-columns" aria-labelledby="related-title">
                     <h2 class="related-title" id="related-title">
                         <i class="fas fa-newspaper" aria-hidden="true"></i>
-                        関連コラム
+                        あわせて読みたい関連コラム
                     </h2>
                     <div class="related-grid">
                         <?php while ($related_query->have_posts()): $related_query->the_post(); ?>
@@ -507,14 +519,13 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
         </main>
 
-        <!-- AIサイドバー（ワイド版・常時表示） -->
+        <!-- サイドバー -->
         <aside class="column-sidebar" role="complementary" aria-label="サイドバー">
             
             <!-- アフィリエイト広告: サイドバー上部 -->
             <?php if (function_exists('ji_display_ad')): ?>
                 <div class="sidebar-card sidebar-ad-space sidebar-ad-top">
                     <?php 
-                    // コラムカテゴリーIDを取得
                     $column_category_ids = array();
                     if (!empty($categories) && !is_wp_error($categories)) {
                         foreach ($categories as $cat) {
@@ -542,18 +553,16 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 </div>
             </section>
             
-
-            
-            <!-- 関連する補助金 -->
+            <!-- このコラムの補助金情報 -->
             <?php if ($related_grants_query && $related_grants_query->have_posts()): ?>
             <section class="sidebar-card related-grants-card" aria-labelledby="related-grants-title">
-                <header class="card-header">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <header class="card-header card-header-grants">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                         <circle cx="12" cy="12" r="2" fill="currentColor"/>
                     </svg>
-                    <h2 id="related-grants-title">関連する補助金</h2>
+                    <h2 id="related-grants-title">このコラムの補助金情報</h2>
                 </header>
                 <div class="card-body">
                     <div class="related-grants-list">
@@ -578,16 +587,16 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                                     <div class="related-grant-meta">
                                         <?php if ($formatted_amount): ?>
                                             <span class="grant-amount">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                     <line x1="12" y1="1" x2="12" y2="23"/>
                                                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                                                 </svg>
-                                                <?php echo esc_html($formatted_amount); ?>
+                                                最大 <?php echo esc_html($formatted_amount); ?>
                                             </span>
                                         <?php endif; ?>
                                         <?php if ($grant_deadline): ?>
                                             <span class="grant-deadline">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                                                     <line x1="16" y1="2" x2="16" y2="6"/>
                                                     <line x1="8" y1="2" x2="8" y2="6"/>
@@ -606,7 +615,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                     </div>
                     <a href="<?php echo home_url('/grants/'); ?>" class="view-all-grants">
                         すべての補助金を見る
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <line x1="5" y1="12" x2="19" y2="12"/>
                             <polyline points="12 5 19 12 12 19"/>
                         </svg>
@@ -665,7 +674,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 </article>
 
-<!-- モバイル用統合ナビCTAボタン -->
+<!-- モバイル用フローティングボタン -->
 <button class="gus-mobile-toc-cta" id="mobileTocBtn" aria-label="目次とAI質問を開く">
     <div class="gus-mobile-toc-icon">
         <span class="gus-mobile-toc-icon-toc" aria-hidden="true">📑</span>
@@ -673,10 +682,10 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     </div>
 </button>
 
-<!-- モバイル用目次オーバーレイ -->
+<!-- モバイル用オーバーレイ -->
 <div class="gus-mobile-toc-overlay" id="mobileTocOverlay" aria-hidden="true"></div>
 
-<!-- モバイル用統合ナビパネル -->
+<!-- モバイル用パネル -->
 <div class="gus-mobile-toc-panel" id="mobileTocPanel" role="dialog" aria-labelledby="mobile-panel-title" aria-modal="true">
     <header class="gus-mobile-toc-header">
         <h2 class="gus-mobile-toc-title" id="mobile-panel-title">目次 & AI質問</h2>
@@ -685,7 +694,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         </button>
     </header>
     
-    <!-- タブナビゲーション -->
     <div class="gus-mobile-nav-tabs" role="tablist" aria-label="目次とAI質問の切り替え">
         <button class="gus-mobile-nav-tab active" data-tab="ai" role="tab" aria-selected="true" aria-controls="aiContent" id="aiTab">
             <i class="fas fa-robot" aria-hidden="true"></i>
@@ -697,7 +705,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         </button>
     </div>
     
-    <!-- AI質問コンテンツ -->
     <div class="gus-mobile-nav-content active" id="aiContent" role="tabpanel" aria-labelledby="aiTab">
         <div class="gus-ai-chat-messages" id="mobileAiMessages" role="log" aria-live="polite" aria-label="AIチャット">
             <div class="ai-message ai-message-assistant">
@@ -722,7 +729,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         </div>
     </div>
     
-    <!-- 目次コンテンツ -->
     <div class="gus-mobile-nav-content" id="tocContent" role="tabpanel" aria-labelledby="tocTab" hidden>
         <nav class="gus-mobile-toc-list" id="mobileTocList" aria-label="記事の目次">
             <!-- JavaScriptで動的生成 -->
@@ -736,8 +742,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 <style>
 /* ============================================
-   Single Column - SEO Enhanced & Wide Sidebar
-   コラム詳細 - SEO最適化 + ワイドサイドバー
+   Single Column v5.1 - SEO Enhanced & Accessibility
    ============================================ */
 
 :root {
@@ -749,11 +754,11 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     --color-gray-200: #e5e5e5;
     --color-gray-600: #525252;
     --color-gray-900: #171717;
-    --sidebar-width: 420px; /* 360px → 420px に拡大 */
+    --sidebar-width: 420px;
     --header-height: 80px;
 }
 
-/* スクリーンリーダー専用クラス */
+/* スクリーンリーダー専用 */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -773,12 +778,12 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 /* レイアウトコンテナ */
 .column-layout-container {
-    max-width: 1480px; /* 1400px → 1480px に拡大（サイドバー幅増加分） */
+    max-width: 1480px;
     margin: 0 auto;
     padding: 32px 16px;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 40px; /* 32px → 40px に拡大 */
+    gap: 40px;
 }
 
 @media (min-width: 1024px) {
@@ -792,7 +797,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .column-main-content {
     background: var(--color-secondary);
     border: 3px solid var(--color-primary);
-    padding: 40px 32px; /* 32px 24px → 40px 32px に拡大 */
+    padding: 40px 32px;
 }
 
 @media (max-width: 767px) {
@@ -803,14 +808,14 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 /* ヘッダーセクション */
 .column-header-section {
-    margin-bottom: 40px; /* 32px → 40px */
-    padding-bottom: 32px; /* 24px → 32px */
+    margin-bottom: 40px;
+    padding-bottom: 32px;
     border-bottom: 2px solid var(--color-gray-200);
 }
 
 /* パンくずリスト */
 .column-breadcrumb {
-    margin-bottom: 20px; /* 16px → 20px */
+    margin-bottom: 20px;
 }
 
 .column-breadcrumb ol {
@@ -843,16 +848,16 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .column-badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px; /* 8px → 10px */
-    margin-bottom: 20px; /* 16px → 20px */
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 16px; /* 6px 14px → 8px 16px */
-    font-size: 14px; /* 13px → 14px */
+    padding: 8px 16px;
+    font-size: 14px;
     font-weight: 700;
     border: 2px solid;
     text-decoration: none;
@@ -895,16 +900,16 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 /* タイトル */
 .column-title {
-    font-size: 36px; /* 32px → 36px */
+    font-size: 36px;
     font-weight: 900;
     color: var(--color-primary);
     line-height: 1.4;
-    margin: 0 0 20px; /* 16px → 20px */
+    margin: 0 0 20px;
 }
 
 @media (max-width: 767px) {
     .column-title {
-        font-size: 26px; /* 24px → 26px */
+        font-size: 26px;
     }
 }
 
@@ -912,8 +917,8 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .column-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px; /* 16px → 20px */
-    font-size: 15px; /* 14px → 15px */
+    gap: 20px;
+    font-size: 15px;
     color: var(--color-gray-600);
 }
 
@@ -929,7 +934,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 /* アイキャッチ */
 .column-thumbnail {
-    margin: 32px 0; /* 24px → 32px */
+    margin: 32px 0;
     border: 2px solid var(--color-primary);
     overflow: hidden;
 }
@@ -944,15 +949,15 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .target-audience-box {
     background: var(--color-gray-50);
     border-left: 4px solid var(--color-primary);
-    padding: 24px; /* 20px → 24px */
-    margin: 32px 0; /* 24px → 32px */
+    padding: 24px;
+    margin: 32px 0;
 }
 
 .box-title {
-    font-size: 18px; /* 16px → 18px */
+    font-size: 18px;
     font-weight: 700;
     color: var(--color-primary);
-    margin: 0 0 16px; /* 12px → 16px */
+    margin: 0 0 16px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -962,14 +967,14 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 10px; /* 8px → 10px */
+    gap: 10px;
 }
 
 .audience-list li {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 15px; /* 14px → 15px */
+    font-size: 15px;
     color: var(--color-gray-600);
 }
 
@@ -979,58 +984,58 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 /* 記事本文 */
 .column-content {
-    font-size: 17px; /* 16px → 17px */
-    line-height: 1.9; /* 1.8 → 1.9 */
+    font-size: 17px;
+    line-height: 1.9;
     color: var(--color-gray-900);
-    margin: 40px 0; /* 32px → 40px */
+    margin: 40px 0;
 }
 
 .column-content h2 {
-    font-size: 26px; /* 24px → 26px */
+    font-size: 26px;
     font-weight: 700;
-    margin: 40px 0 20px; /* 32px 0 16px → 40px 0 20px */
-    padding-bottom: 12px; /* 8px → 12px */
+    margin: 40px 0 20px;
+    padding-bottom: 12px;
     border-bottom: 3px solid var(--color-primary);
 }
 
 .column-content h3 {
-    font-size: 22px; /* 20px → 22px */
+    font-size: 22px;
     font-weight: 700;
-    margin: 32px 0 16px; /* 24px 0 12px → 32px 0 16px */
+    margin: 32px 0 16px;
 }
 
 .column-content p {
-    margin: 20px 0; /* 16px → 20px */
+    margin: 20px 0;
 }
 
 .column-content ul,
 .column-content ol {
-    margin: 20px 0; /* 16px → 20px */
-    padding-left: 28px; /* 24px → 28px */
+    margin: 20px 0;
+    padding-left: 28px;
 }
 
 .column-content li {
-    margin: 10px 0; /* 8px → 10px */
+    margin: 10px 0;
 }
 
 @media (max-width: 767px) {
     .column-content {
-        font-size: 16px; /* 15px → 16px */
+        font-size: 16px;
     }
 }
 
 /* タグ */
 .column-tags {
-    margin: 40px 0; /* 32px → 40px */
-    padding: 24px; /* 20px → 24px */
+    margin: 40px 0;
+    padding: 24px;
     background: var(--color-gray-50);
     border: 2px solid var(--color-gray-200);
 }
 
 .tags-title {
-    font-size: 18px; /* 16px → 18px */
+    font-size: 18px;
     font-weight: 700;
-    margin: 0 0 16px; /* 12px → 16px */
+    margin: 0 0 16px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1039,13 +1044,13 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .tags-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px; /* 8px → 10px */
+    gap: 10px;
 }
 
 .tag-link {
     display: inline-block;
-    padding: 8px 16px; /* 6px 12px → 8px 16px */
-    font-size: 14px; /* 13px → 14px */
+    padding: 8px 16px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-primary);
     background: var(--color-secondary);
@@ -1060,7 +1065,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     transform: translateY(-2px);
 }
 
-/* 最強CTAボックス - 記事終了後の行動誘導（UX最適化版） */
+/* CTAボックス */
 .gus-cta-section {
     background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     color: #ffffff;
@@ -1092,7 +1097,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .gus-cta-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--gus-space-xl, 32px);
+    padding: 0 32px;
 }
 
 .gus-cta-content {
@@ -1107,7 +1112,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     height: 72px;
     background: rgba(255, 215, 0, 0.1);
     border-radius: 50%;
-    margin-bottom: var(--gus-space-lg, 24px);
+    margin-bottom: 24px;
     color: #FFD700;
 }
 
@@ -1120,14 +1125,14 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     font-size: 2rem;
     font-weight: 700;
     line-height: 1.4;
-    margin-bottom: var(--gus-space-lg, 24px);
+    margin-bottom: 24px;
     color: #ffffff;
 }
 
 .gus-cta-description {
     font-size: 1.125rem;
     line-height: 1.6;
-    margin-bottom: var(--gus-space-2xl, 48px);
+    margin-bottom: 48px;
     color: rgba(255, 255, 255, 0.9);
     max-width: 700px;
     margin-left: auto;
@@ -1137,7 +1142,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .gus-cta-buttons {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--gus-space-lg, 24px);
+    gap: 24px;
     max-width: 900px;
     margin: 0 auto;
 }
@@ -1146,7 +1151,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--gus-space-md, 16px);
+    gap: 16px;
     padding: 24px 32px;
     font-size: 1rem;
     font-weight: 600;
@@ -1202,7 +1207,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     display: block;
 }
 
-/* Primary CTA Button - Black with Yellow Accent */
 .gus-cta-btn-primary {
     background: #000000;
     color: #ffffff;
@@ -1221,7 +1225,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     transform: scale(1.1) rotate(5deg);
 }
 
-/* Secondary CTA Button - White with Black Text */
 .gus-cta-btn-secondary {
     background: #ffffff;
     color: #000000;
@@ -1240,170 +1243,63 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     transform: scale(1.1);
 }
 
-/* Tablet Responsive */
-@media (max-width: 1024px) {
-    .gus-cta-section {
-        padding: 56px 0;
-    }
-    
-    .gus-cta-title {
-        font-size: 1.75rem;
-    }
-    
-    .gus-cta-description {
-        font-size: 1rem;
-    }
-    
-    .gus-cta-buttons {
-        gap: var(--gus-space-md, 16px);
-    }
-    
-    .gus-cta-btn {
-        padding: 20px 24px;
-        min-height: 80px;
-    }
-}
-
-/* Mobile Responsive */
 @media (max-width: 768px) {
     .gus-cta-section {
         padding: 48px 0;
     }
     
     .gus-cta-container {
-        padding: 0 var(--gus-space-lg, 24px);
-    }
-    
-    .gus-cta-icon {
-        width: 64px;
-        height: 64px;
-    }
-    
-    .gus-cta-icon svg {
-        width: 40px;
-        height: 40px;
+        padding: 0 24px;
     }
     
     .gus-cta-title {
         font-size: 1.5rem;
-        line-height: 1.3;
-        margin-bottom: var(--gus-space-md, 16px);
     }
     
     .gus-cta-description {
         font-size: 0.9375rem;
-        margin-bottom: var(--gus-space-xl, 32px);
+        margin-bottom: 32px;
     }
     
     .gus-cta-buttons {
         grid-template-columns: 1fr;
-        gap: var(--gus-space-md, 16px);
-        max-width: 100%;
+        gap: 16px;
     }
     
     .gus-cta-btn {
         padding: 18px 20px;
         min-height: 70px;
-        font-size: 0.9375rem;
-    }
-    
-    .gus-cta-btn strong {
-        font-size: 1rem;
-    }
-    
-    .gus-cta-btn small {
-        font-size: 0.8125rem;
-    }
-}
-
-/* Extra Small Mobile */
-@media (max-width: 375px) {
-    .gus-cta-section {
-        padding: 40px 0;
-    }
-    
-    .gus-cta-title {
-        font-size: 1.25rem;
-    }
-    
-    .gus-cta-description {
-        font-size: 0.875rem;
-    }
-    
-    .gus-cta-btn {
-        padding: 16px 18px;
-        min-height: 65px;
-        gap: var(--gus-space-sm, 12px);
-    }
-    
-    .gus-cta-btn svg {
-        width: 20px;
-        height: 20px;
-    }
-}
-
-/* Reduced Motion Support */
-@media (prefers-reduced-motion: reduce) {
-    .gus-cta-btn,
-    .gus-cta-btn svg,
-    .gus-cta-btn::before {
-        transition: none;
-    }
-    
-    .gus-cta-btn:hover {
-        transform: none;
-    }
-    
-    .gus-cta-btn:hover svg {
-        transform: none;
-    }
-}
-
-/* High Contrast Mode Support */
-@media (prefers-contrast: high) {
-    .gus-cta-section {
-        background: #000000;
-        border-top: 4px solid #FFD700;
-        border-bottom: 4px solid #FFD700;
-    }
-    
-    .gus-cta-btn-primary {
-        border-width: 3px;
-    }
-    
-    .gus-cta-btn-secondary {
-        border-width: 3px;
     }
 }
 
 /* シェアボタン */
 .column-share {
-    margin: 40px 0; /* 32px → 40px */
-    padding: 28px; /* 24px → 28px */
+    margin: 40px 0;
+    padding: 28px;
     background: var(--color-primary);
     color: var(--color-secondary);
     text-align: center;
 }
 
 .share-title {
-    font-size: 18px; /* 16px → 18px */
+    font-size: 18px;
     font-weight: 700;
-    margin: 0 0 20px; /* 16px → 20px */
+    margin: 0 0 20px;
 }
 
 .share-buttons {
     display: flex;
     justify-content: center;
-    gap: 16px; /* 12px → 16px */
+    gap: 16px;
     flex-wrap: wrap;
 }
 
 .share-btn {
     display: inline-flex;
     align-items: center;
-    gap: 10px; /* 8px → 10px */
-    padding: 12px 24px; /* 10px 20px → 12px 24px */
-    font-size: 15px; /* 14px → 15px */
+    gap: 10px;
+    padding: 12px 24px;
+    font-size: 15px;
     font-weight: 600;
     border: 2px solid var(--color-secondary);
     text-decoration: none;
@@ -1437,15 +1333,15 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 
 /* 関連記事 */
 .related-columns {
-    margin: 56px 0 0; /* 48px → 56px */
-    padding: 40px 0 0; /* 32px → 40px */
+    margin: 56px 0 0;
+    padding: 40px 0 0;
     border-top: 3px solid var(--color-primary);
 }
 
 .related-title {
-    font-size: 22px; /* 20px → 22px */
+    font-size: 22px;
     font-weight: 700;
-    margin: 0 0 28px; /* 24px → 28px */
+    margin: 0 0 28px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1454,7 +1350,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 .related-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 24px; /* 20px → 24px */
+    gap: 24px;
 }
 
 @media (min-width: 640px) {
@@ -1470,25 +1366,22 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 }
 
 /* ============================================
-   AIサイドバー（ワイド版・常時表示最適化）
+   サイドバー - 視認性改善版
    ============================================ */
 
 .column-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 28px; /* 24px → 28px */
+    gap: 28px;
 }
 
-/* デスクトップ: スティッキーサイドバー（最適化） */
 @media (min-width: 1024px) {
     .column-sidebar {
         position: sticky;
-        top: calc(var(--header-height) + 20px); /* ヘッダー高さ + 余白 */
+        top: calc(var(--header-height) + 20px);
         overflow-y: auto;
         overflow-x: hidden;
         align-self: flex-start;
-        
-        /* スクロールバーのスタイリング */
         scrollbar-width: thin;
         scrollbar-color: var(--color-gray-200) transparent;
     }
@@ -1522,7 +1415,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
-/* Affiliate Ad Space */
 .sidebar-ad-space {
     background: #FAFAFA !important;
     border: 2px dashed #E5E5E5 !important;
@@ -1540,154 +1432,57 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     background: #F5F5F5 !important;
 }
 
-/* Ad Container within the ad space */
-.sidebar-ad-space .ji-affiliate-ad {
-    width: 100%;
-    display: block;
-}
-
-.sidebar-ad-space img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-}
-
-/* When no ad is available, hide the space */
 .sidebar-ad-space:empty {
     display: none;
 }
 
+/* カードヘッダー - 視認性改善 */
 .card-header {
     background: var(--color-primary);
     color: var(--color-accent);
-    padding: 18px 20px; /* 16px → 18px 20px */
+    padding: 18px 20px;
     display: flex;
     align-items: center;
-    gap: 12px; /* 10px → 12px */
+    gap: 12px;
 }
 
 .card-header h2 {
-    font-size: 17px; /* 16px → 17px */
+    font-size: 17px;
     font-weight: 700;
     margin: 0;
+    color: var(--color-accent); /* 明示的に黄色を指定 */
 }
 
-.card-header i {
-    font-size: 20px; /* 18px → 20px */
+.card-header i,
+.card-header svg {
+    font-size: 20px;
+    color: var(--color-accent); /* アイコンも黄色に */
+}
+
+/* 補助金情報カード専用ヘッダー - さらに視認性向上 */
+.card-header-grants {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    border-bottom: 3px solid var(--color-accent);
+}
+
+.card-header-grants h2 {
+    color: #ffffff; /* 白文字でコントラスト最大化 */
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.card-header-grants svg {
+    color: var(--color-accent);
+    filter: drop-shadow(0 0 2px rgba(255, 235, 59, 0.5));
 }
 
 .card-body {
-    padding: 24px; /* 20px → 24px */
-}
-
-/* AI相談カード */
-.ai-intro {
-    font-size: 15px; /* 14px → 15px */
-    color: var(--color-gray-600);
-    margin: 0 0 20px; /* 16px → 20px */
-}
-
-.ai-chat-container {
-    max-height: 350px; /* 300px → 350px に拡大 */
-    overflow-y: auto;
-    margin-bottom: 20px; /* 16px → 20px */
-    display: flex;
-    flex-direction: column;
-    gap: 14px; /* 12px → 14px */
-    padding: 4px;
-    
-    /* スクロールバーのスタイリング */
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-gray-200) transparent;
-}
-
-.ai-chat-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.ai-chat-container::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.ai-chat-container::-webkit-scrollbar-thumb {
-    background-color: var(--color-gray-200);
-    border-radius: 3px;
-}
-
-.ai-message {
-    display: flex;
-    gap: 12px; /* 10px → 12px */
-}
-
-.ai-message-assistant {
-    align-self: flex-start;
-}
-
-.ai-avatar {
-    width: 36px; /* 32px → 36px */
-    height: 36px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    color: var(--color-accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.ai-content {
-    background: var(--color-gray-100);
-    padding: 12px 16px; /* 10px 14px → 12px 16px */
-    border-radius: 12px;
-    font-size: 15px; /* 14px → 15px */
-    line-height: 1.7; /* 1.6 → 1.7 */
-    max-width: 80%;
-}
-
-.ai-input-form textarea {
-    width: 100%;
-    padding: 12px; /* 10px → 12px */
-    border: 2px solid var(--color-primary);
-    font-size: 15px; /* 14px → 15px */
-    resize: none;
-    margin-bottom: 10px; /* 8px → 10px */
-    font-family: inherit;
-    line-height: 1.5;
-}
-
-.ai-input-form textarea:focus {
-    outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(255, 235, 59, 0.2);
-}
-
-.ai-send-btn {
-    width: 100%;
-    padding: 14px; /* 12px → 14px */
-    background: var(--color-primary);
-    color: var(--color-accent);
-    border: none;
-    font-size: 16px; /* 15px → 16px */
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.2s;
-}
-
-.ai-send-btn:hover,
-.ai-send-btn:focus {
-    background: var(--color-accent);
-    color: var(--color-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    padding: 24px;
 }
 
 /* 目次 */
 .toc-nav {
-    font-size: 15px; /* 14px → 15px */
+    font-size: 15px;
 }
 
 .toc-nav ul {
@@ -1696,14 +1491,14 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
 }
 
 .toc-nav li {
-    margin: 10px 0; /* 8px → 10px */
+    margin: 10px 0;
 }
 
 .toc-nav a {
     color: var(--color-gray-600);
     text-decoration: none;
     display: block;
-    padding: 6px 0; /* 4px → 6px */
+    padding: 6px 0;
     transition: color 0.2s;
     line-height: 1.6;
 }
@@ -1714,372 +1509,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     text-decoration: underline;
 }
 
-/* 人気記事リスト */
-.popular-list {
-    list-style: none;
-}
-
-.popular-list li {
-    margin: 14px 0; /* 12px → 14px */
-}
-
-.popular-list a {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px; /* 12px → 14px */
-    text-decoration: none;
-    color: var(--color-gray-900);
-    transition: color 0.2s;
-}
-
-.popular-list a:hover,
-.popular-list a:focus {
-    color: var(--color-primary);
-}
-
-.popular-rank {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px; /* 24px → 28px */
-    height: 28px;
-    background: var(--color-primary);
-    color: var(--color-accent);
-    font-size: 13px; /* 12px → 13px */
-    font-weight: 700;
-    flex-shrink: 0;
-}
-
-.popular-title {
-    flex: 1;
-    font-size: 15px; /* 14px → 15px */
-    line-height: 1.6;
-}
-
-/* レスポンシブ */
-@media (max-width: 1023px) {
-    /* モバイル: サイドバーを非表示（モバイルパネルを使用） */
-    .column-sidebar {
-        display: none;
-    }
-}
-
-/* ============================================
-   モバイル用フローティングボタン & パネル
-   ============================================ */
-
-/* モバイルCTAボタン */
-.gus-mobile-toc-cta {
-    display: none;
-    position: fixed;
-    bottom: 80px;
-    right: 16px;
-    z-index: 999;
-    background: var(--color-gray-900);
-    color: var(--color-secondary);
-    border: none;
-    border-radius: 50%;
-    width: 60px; /* 56px → 60px */
-    height: 60px;
-    cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    align-items: center;
-    justify-content: center;
-}
-
-.gus-mobile-toc-cta:hover,
-.gus-mobile-toc-cta:focus {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-}
-
-.gus-mobile-toc-cta:active {
-    transform: scale(0.95);
-}
-
-.gus-mobile-toc-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-}
-
-.gus-mobile-toc-icon-toc {
-    font-size: 18px; /* 16px → 18px */
-    line-height: 1;
-}
-
-.gus-mobile-toc-icon-ai {
-    font-size: 11px; /* 10px → 11px */
-    font-weight: 700;
-    line-height: 1;
-}
-
-/* モバイルでのみ表示 */
-@media (max-width: 1023px) {
-    .gus-mobile-toc-cta {
-        display: flex;
-    }
-}
-
-/* オーバーレイ */
-.gus-mobile-toc-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6); /* 0.5 → 0.6 */
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.gus-mobile-toc-overlay.active {
-    display: block;
-    opacity: 1;
-}
-
-/* モバイルパネル */
-.gus-mobile-toc-panel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--color-secondary);
-    border-top-left-radius: 20px; /* 16px → 20px */
-    border-top-right-radius: 20px;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25); /* 0.2 → 0.25 */
-    z-index: 1001;
-    max-height: 75vh; /* 70vh → 75vh */
-    display: flex;
-    flex-direction: column;
-    transform: translateY(100%);
-    transition: transform 0.3s ease;
-}
-
-.gus-mobile-toc-panel.active {
-    transform: translateY(0);
-}
-
-/* パネルヘッダー */
-.gus-mobile-toc-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 24px; /* 16px 20px → 20px 24px */
-    border-bottom: 2px solid var(--color-gray-200);
-}
-
-.gus-mobile-toc-title {
-    margin: 0;
-    font-size: 19px; /* 18px → 19px */
-    font-weight: 700;
-    color: var(--color-gray-900);
-}
-
-.gus-mobile-toc-close {
-    background: transparent;
-    border: none;
-    color: var(--color-gray-600);
-    font-size: 26px; /* 24px → 26px */
-    cursor: pointer;
-    padding: 0;
-    width: 36px; /* 32px → 36px */
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s;
-}
-
-.gus-mobile-toc-close:hover,
-.gus-mobile-toc-close:focus {
-    color: var(--color-primary);
-}
-
-/* タブナビゲーション */
-.gus-mobile-nav-tabs {
-    display: flex;
-    border-bottom: 2px solid var(--color-gray-200);
-    background: var(--color-gray-50);
-}
-
-.gus-mobile-nav-tab {
-    flex: 1;
-    padding: 14px 20px; /* 12px 16px → 14px 20px */
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    font-size: 16px; /* 15px → 16px */
-    font-weight: 600;
-    color: var(--color-gray-600);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.gus-mobile-nav-tab:hover,
-.gus-mobile-nav-tab:focus {
-    background: var(--color-gray-100);
-}
-
-.gus-mobile-nav-tab.active {
-    color: var(--color-primary);
-    background: var(--color-secondary);
-    border-bottom-color: var(--color-primary);
-}
-
-/* タブコンテンツ */
-.gus-mobile-nav-content {
-    display: none;
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px; /* 20px → 24px */
-}
-
-.gus-mobile-nav-content.active {
-    display: flex;
-    flex-direction: column;
-}
-
-/* AIチャットメッセージ（モバイル） */
-.gus-ai-chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    margin-bottom: 20px; /* 16px → 20px */
-    display: flex;
-    flex-direction: column;
-    gap: 14px; /* 12px → 14px */
-}
-
-/* AI入力コンテナ（モバイル） */
-.gus-ai-input-container {
-    display: flex;
-    gap: 10px; /* 8px → 10px */
-    padding-top: 16px; /* 12px → 16px */
-    border-top: 2px solid var(--color-gray-200);
-}
-
-.gus-ai-input-container textarea {
-    flex: 1;
-    padding: 12px 14px; /* 10px 12px → 12px 14px */
-    border: 2px solid var(--color-gray-200);
-    border-radius: 10px; /* 8px → 10px */
-    font-size: 15px; /* 14px → 15px */
-    font-family: inherit;
-    resize: none;
-    line-height: 1.5;
-}
-
-.gus-ai-input-container textarea:focus {
-    outline: none;
-    border-color: var(--color-primary);
-}
-
-.gus-ai-send-btn {
-    padding: 12px 18px; /* 10px 16px → 12px 18px */
-    background: var(--color-primary);
-    color: var(--color-secondary);
-    border: none;
-    border-radius: 10px; /* 8px → 10px */
-    font-size: 15px; /* 14px → 15px */
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.gus-ai-send-btn:hover,
-.gus-ai-send-btn:focus {
-    background: var(--color-gray-900);
-}
-
-.gus-ai-send-btn:active {
-    transform: scale(0.95);
-}
-
-/* モバイル目次リスト */
-.gus-mobile-toc-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px; /* 4px → 6px */
-}
-
-.gus-mobile-toc-list ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.gus-mobile-toc-list li {
-    margin: 0;
-}
-
-.gus-mobile-toc-list a {
-    display: block;
-    padding: 12px 14px; /* 10px 12px → 12px 14px */
-    font-size: 15px; /* 14px → 15px */
-    color: var(--color-gray-900);
-    text-decoration: none;
-    border-left: 3px solid transparent;
-    transition: all 0.2s ease;
-    line-height: 1.6;
-}
-
-.gus-mobile-toc-list a:hover,
-.gus-mobile-toc-list a:focus {
-    background: var(--color-gray-50);
-    border-left-color: var(--color-primary);
-}
-
-.gus-mobile-toc-list li[data-level="2"] a {
-    padding-left: 28px; /* 24px → 28px */
-    font-size: 14px; /* 13px → 14px */
-}
-
-/* ========================================
-   Related Grants Section
-   ======================================== */
-
-/* PC版: サイドバーの関連補助金 */
-.related-grants-card {
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.related-grants-card .card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.related-grants-card .card-header svg {
-    flex-shrink: 0;
-    color: #0073aa;
-}
-
-.related-grants-card .card-header h2 {
-    font-size: 16px;
-    font-weight: 700;
-    margin: 0;
-    color: #1a1a1a;
-}
-
+/* 補助金情報リスト */
 .related-grants-list {
     display: flex;
     flex-direction: column;
@@ -2127,10 +1557,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     gap: 4px;
 }
 
-.related-grant-meta svg {
-    flex-shrink: 0;
-}
-
 .grant-amount {
     color: #00a32a;
     font-weight: 600;
@@ -2174,11 +1600,52 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     color: #fff;
 }
 
-.view-all-grants svg {
+/* 人気記事 */
+.popular-list {
+    list-style: none;
+}
+
+.popular-list li {
+    margin: 14px 0;
+}
+
+.popular-list a {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    text-decoration: none;
+    color: var(--color-gray-900);
+    transition: color 0.2s;
+}
+
+.popular-list a:hover,
+.popular-list a:focus {
+    color: var(--color-primary);
+}
+
+.popular-rank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--color-primary);
+    color: var(--color-accent);
+    font-size: 13px;
+    font-weight: 700;
     flex-shrink: 0;
 }
 
-/* スマホ版: メインコンテンツの関連補助金 */
+.popular-title {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* ============================================
+   モバイル用補助金情報
+   ============================================ */
+
 .mobile-related-grants {
     display: none;
     margin: 40px 0;
@@ -2292,338 +1759,339 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
     background: #005177;
 }
 
-.mobile-view-all-grants svg {
-    flex-shrink: 0;
-}
-
-/* レスポンシブ対応 */
 @media (max-width: 1024px) {
-    /* PC版を非表示 */
     .related-grants-card {
         display: none;
     }
     
-    /* スマホ版を表示 */
     .mobile-related-grants {
         display: block;
     }
 }
 
-@media (max-width: 768px) {
-    .mobile-related-grants {
-        margin: 30px 0;
-        padding: 20px;
-        border-radius: 10px;
-    }
-    
-    .mobile-related-grants .section-title {
-        font-size: 18px;
-    }
-    
-    .mobile-grant-title {
-        font-size: 15px;
-    }
+/* ============================================
+   モバイルパネル
+   ============================================ */
+
+.gus-mobile-toc-cta {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    z-index: 999;
+    background: var(--color-gray-900);
+    color: var(--color-secondary);
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    align-items: center;
+    justify-content: center;
 }
 
-/* ========================================
-   AI ASSISTANT STYLES
-   ======================================== */
-   PC PERMANENT AI CHAT - サイドバー常時表示
-   =============================================== */
-.gus-pc-ai-permanent {
-    background: #FFFFFF;
-    border: 2px solid #E5E5E5;
-    border-radius: 12px;
+.gus-mobile-toc-cta:hover,
+.gus-mobile-toc-cta:focus {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.gus-mobile-toc-icon {
     display: flex;
     flex-direction: column;
-    height: 800px;
-    max-height: calc(100vh - 80px);
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
 }
 
-.gus-pc-ai-permanent:hover {
-    border-color: #000000;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+.gus-mobile-toc-icon-toc {
+    font-size: 18px;
+    line-height: 1;
 }
 
-.gus-pc-ai-permanent-header {
-    padding: 16px;
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    color: #FFFFFF;
-    border-bottom: 2px solid #E5E5E5;
-    flex-shrink: 0;
+.gus-mobile-toc-icon-ai {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
 }
 
-.gus-pc-ai-permanent-title {
+@media (max-width: 1023px) {
+    .gus-mobile-toc-cta {
+        display: flex;
+    }
+    
+    .column-sidebar {
+        display: none;
+    }
+}
+
+.gus-mobile-toc-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.gus-mobile-toc-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+.gus-mobile-toc-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-secondary);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+    z-index: 1001;
+    max-height: 75vh;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.gus-mobile-toc-panel.active {
+    transform: translateY(0);
+}
+
+.gus-mobile-toc-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 15px;
-    font-weight: 800;
-    margin: 0 0 6px 0;
-    letter-spacing: -0.3px;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 2px solid var(--color-gray-200);
 }
 
-.gus-pc-ai-permanent-subtitle {
-    font-size: 11px;
-    opacity: 0.85;
-    font-weight: 500;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.gus-mobile-toc-title {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--color-gray-900);
 }
 
-.gus-pc-ai-permanent-messages {
+.gus-mobile-toc-close {
+    background: transparent;
+    border: none;
+    color: var(--color-gray-600);
+    font-size: 26px;
+    cursor: pointer;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.gus-mobile-toc-close:hover,
+.gus-mobile-toc-close:focus {
+    color: var(--color-primary);
+}
+
+.gus-mobile-nav-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--color-gray-200);
+    background: var(--color-gray-50);
+}
+
+.gus-mobile-nav-tab {
     flex: 1;
-    padding: 16px;
+    padding: 14px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gray-600);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.gus-mobile-nav-tab:hover,
+.gus-mobile-nav-tab:focus {
+    background: var(--color-gray-100);
+}
+
+.gus-mobile-nav-tab.active {
+    color: var(--color-primary);
+    background: var(--color-secondary);
+    border-bottom-color: var(--color-primary);
+}
+
+.gus-mobile-nav-content {
+    display: none;
+    flex: 1;
     overflow-y: auto;
+    padding: 24px;
+}
+
+.gus-mobile-nav-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.gus-ai-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    background: #FAFAFA;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
 }
 
-.gus-pc-ai-permanent-messages::-webkit-scrollbar {
-    width: 6px;
-}
-
-.gus-pc-ai-permanent-messages::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.gus-pc-ai-permanent-messages::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
-}
-
-.gus-pc-ai-permanent-messages::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.gus-pc-ai-permanent-input-container {
-    padding: 14px;
-    background: #FFFFFF;
-    border-top: 2px solid #E5E5E5;
-    flex-shrink: 0;
-}
-
-.gus-pc-ai-permanent-input-wrapper {
+.ai-message {
     display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 12px;
 }
 
-.gus-pc-ai-permanent-input {
-    flex: 1;
-    padding: 12px 14px;
-    border: 2px solid #E5E5E5;
-    border-radius: 10px;
-    font-size: 13px;
-    font-family: inherit;
-    min-height: 44px;
-    max-height: 100px;
-    resize: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #F8F8F8;
-    color: #1A1A1A;
+.ai-message-assistant {
+    align-self: flex-start;
 }
 
-.gus-pc-ai-permanent-input:focus {
-    outline: none;
-    border-color: #000000;
-    background: #FFFFFF;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.gus-pc-ai-permanent-input::placeholder {
-    color: #999999;
-}
-
-.gus-pc-ai-permanent-send {
-    width: 44px;
-    height: 44px;
-    background: #000000;
-    color: #FFFFFF;
-    border: 2px solid #000000;
-    border-radius: 10px;
+.ai-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: var(--color-accent);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.gus-pc-ai-permanent-send:hover:not(:disabled) {
-    background: #FFFFFF;
-    color: #000000;
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+.ai-content {
+    background: var(--color-gray-100);
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 80%;
 }
 
-.gus-pc-ai-permanent-send:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.gus-pc-ai-permanent-suggestions {
+.gus-ai-input-container {
     display: flex;
-    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 2px solid var(--color-gray-200);
+}
+
+.gus-ai-input-container textarea {
+    flex: 1;
+    padding: 12px 14px;
+    border: 2px solid var(--color-gray-200);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    resize: none;
+    line-height: 1.5;
+}
+
+.gus-ai-input-container textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.gus-ai-send-btn {
+    padding: 12px 18px;
+    background: var(--color-primary);
+    color: var(--color-secondary);
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gus-ai-send-btn:hover,
+.gus-ai-send-btn:focus {
+    background: var(--color-gray-900);
+}
+
+.gus-mobile-toc-list {
+    display: flex;
+    flex-direction: column;
     gap: 6px;
 }
 
-.gus-pc-ai-permanent-suggestion {
-    padding: 7px 12px;
-    background: #F8F8F8;
-    color: #1A1A1A;
-    border: 1px solid #E5E5E5;
-    border-radius: 16px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    white-space: nowrap;
+.gus-mobile-toc-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-.gus-pc-ai-permanent-suggestion:hover {
-    background: #000000;
-    color: #FFFFFF;
-    border-color: #000000;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+.gus-mobile-toc-list li {
+    margin: 0;
 }
 
-/* Message Bubble - Shared */
-.gus-ai-message {
-    display: flex;
-    gap: 10px;
-    max-width: 90%;
-    animation: messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes messageSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(15px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.gus-ai-message--assistant {
-    align-self: flex-start;
-}
-
-.gus-ai-message--user {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-}
-
-.gus-ai-message-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    border: 2px solid;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.gus-ai-message--assistant .gus-ai-message-avatar {
-    background: linear-gradient(135deg, #000000 0%, #333333 100%);
-    color: #FFFFFF;
-    border-color: #000000;
-}
-
-.gus-ai-message--user .gus-ai-message-avatar {
-    background: linear-gradient(135deg, #FFFFFF 0%, #F5F5F5 100%);
-    color: #000000;
-    border-color: #E5E5E5;
-}
-
-.gus-ai-message-content {
-    background: #F8F8F8;
-    padding: 11px 14px;
-    border-radius: 10px;
-    border: 1px solid #E5E5E5;
-    font-size: 12px;
+.gus-mobile-toc-list a {
+    display: block;
+    padding: 12px 14px;
+    font-size: 15px;
+    color: var(--color-gray-900);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
     line-height: 1.6;
-    color: #1A1A1A;
-    word-wrap: break-word;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
-.gus-ai-message--user .gus-ai-message-content {
-    background: #000000;
-    color: #FFFFFF;
-    border-color: #000000;
+.gus-mobile-toc-list a:hover,
+.gus-mobile-toc-list a:focus {
+    background: var(--color-gray-50);
+    border-left-color: var(--color-primary);
 }
 
-/* Typing Indicator */
-.gus-ai-typing {
-    display: flex;
-    gap: 10px;
-    max-width: 90%;
-    align-self: flex-start;
+.gus-mobile-toc-list li[data-level="2"] a {
+    padding-left: 28px;
+    font-size: 14px;
 }
 
-.gus-ai-typing-dots {
-    background: #F8F8F8;
-    padding: 11px 14px;
-    border-radius: 10px;
-    border: 1px solid #E5E5E5;
-    display: flex;
-    gap: 4px;
-    align-items: center;
-}
-
-.gus-ai-typing-dot {
-    width: 6px;
-    height: 6px;
-    background: #666666;
-    border-radius: 50%;
-    animation: typing 1.4s infinite;
-}
-
-.gus-ai-typing-dot:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.gus-ai-typing-dot:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes typing {
-    0%, 80%, 100% { 
-        transform: scale(0.7); 
-        opacity: 0.4; 
-    }
-    40% { 
-        transform: scale(1); 
-        opacity: 1; 
+/* アクセシビリティ */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }
 
-
+@media (prefers-contrast: high) {
+    .card-header {
+        border: 2px solid var(--color-accent);
+    }
+    
+    .card-header-grants {
+        border: 3px solid var(--color-accent);
+    }
+}
 </style>
 
 <script>
 (function() {
     'use strict';
     
-    // 目次自動生成（デスクトップ & モバイル両方）
+    // 目次自動生成
     function generateTOC() {
         const content = document.querySelector('.column-content');
         const tocNav = document.getElementById('toc-nav');
@@ -2642,7 +2110,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             return;
         }
         
-        // デスクトップ用TOC生成
         if (tocNav) {
             let tocHTML = '<ul>';
             headings.forEach((heading, index) => {
@@ -2658,7 +2125,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             tocNav.innerHTML = tocHTML;
         }
         
-        // モバイル用TOC生成
         if (mobileTocList) {
             let mobileTocHTML = '<ul>';
             headings.forEach((heading, index) => {
@@ -2672,49 +2138,12 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             mobileTocHTML += '</ul>';
             mobileTocList.innerHTML = mobileTocHTML;
             
-            // モバイルTOCリンククリックでパネルを閉じる
             mobileTocList.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', function() {
                     closeMobilePanel();
                 });
             });
         }
-    }
-    
-    // AI送信処理（デスクトップ - PC常時表示）
-    function initDesktopAI() {
-        const sendBtn = document.getElementById('pcPermanentSend');
-        const input = document.getElementById('pcPermanentInput');
-        const container = document.getElementById('pcPermanentMessages');
-        
-        if (!sendBtn || !input || !container) return;
-        
-        sendBtn.addEventListener('click', function() {
-            const question = input.value.trim();
-            if (!question) return;
-            
-            sendAIMessage(question, container, input);
-        });
-        
-        // Enterで送信
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendBtn.click();
-            }
-        });
-        
-        // 提案チップクリック
-        const suggestions = document.querySelectorAll('.gus-pc-ai-permanent-suggestion');
-        suggestions.forEach(function(chip) {
-            chip.addEventListener('click', function() {
-                const question = this.getAttribute('data-question');
-                if (question) {
-                    input.value = question;
-                    sendBtn.click();
-                }
-            });
-        });
     }
     
     // AI送信処理（モバイル）
@@ -2732,7 +2161,6 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             sendAIMessage(question, container, input);
         });
         
-        // Enterで送信
         input.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -2741,9 +2169,8 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         });
     }
     
-    // AI共通送信処理（実機能実装）
+    // AI共通送信処理
     function sendAIMessage(question, container, input) {
-        // ユーザーメッセージ追加
         const userMsg = document.createElement('div');
         userMsg.className = 'ai-message';
         userMsg.innerHTML = `
@@ -2756,10 +2183,8 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         `;
         container.appendChild(userMsg);
         
-        // 入力クリア
         input.value = '';
         
-        // ローディング表示
         const loadingMsg = document.createElement('div');
         loadingMsg.className = 'ai-message ai-message-assistant ai-loading';
         loadingMsg.innerHTML = `
@@ -2773,13 +2198,10 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         container.appendChild(loadingMsg);
         container.scrollTop = container.scrollHeight;
         
-        // AI APIを呼び出し
         callAIAPI(question)
             .then(response => {
-                // ローディング削除
                 loadingMsg.remove();
                 
-                // AI応答を追加
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'ai-message ai-message-assistant';
                 aiMsg.innerHTML = `
@@ -2794,10 +2216,8 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 container.scrollTop = container.scrollHeight;
             })
             .catch(error => {
-                // ローディング削除
                 loadingMsg.remove();
                 
-                // エラー表示
                 const errorMsg = document.createElement('div');
                 errorMsg.className = 'ai-message ai-message-assistant';
                 errorMsg.innerHTML = `
@@ -2816,24 +2236,15 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             });
     }
     
-    // AI API呼び出し（フォールバック付き実装）
+    // AI API呼び出し
     function callAIAPI(question) {
-        // 記事コンテンツを取得
         const content = document.querySelector('.column-content');
         const title = document.querySelector('.column-title');
         const contentText = content ? content.innerText : '';
         const titleText = title ? title.innerText : '';
         
-        // Debug: Check if wpApiSettings exists
-        console.log('🔍 wpApiSettings:', window.wpApiSettings);
-        console.log('🔍 wpApiSettings.nonce:', window.wpApiSettings ? window.wpApiSettings.nonce : 'NOT FOUND');
-        
-        // Try REST API first
         const apiUrl = window.wpApiSettings ? window.wpApiSettings.root + 'gi-api/v1/ai-chat' : '/wp-json/gi-api/v1/ai-chat';
         const nonce = window.wpApiSettings && window.wpApiSettings.nonce ? window.wpApiSettings.nonce : '';
-        
-        console.log('🔵 Trying REST API:', apiUrl);
-        console.log('🔐 Nonce:', nonce ? 'EXISTS (length: ' + nonce.length + ')' : 'MISSING ❌');
         
         return fetch(apiUrl, {
             method: 'POST',
@@ -2851,10 +2262,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             })
         })
         .then(response => {
-            console.log('📡 REST API Response status:', response.status);
             if (!response.ok) {
-                console.warn('[AI REST API] Failed with status:', response.status);
-                // Try AJAX fallback
                 return callAIAPI_AJAX(question, titleText, contentText);
             }
             return response.json();
@@ -2864,32 +2272,21 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
                 return data;
             }
             if (data && data.success && data.data && data.data.answer) {
-                console.log('✅ AI Response received:', data.data.source);
                 return data.data.answer;
             } else if (data && typeof data === 'object' && 'answer' in data) {
-                // AJAX response format
-                console.log('✅ AI Response received via AJAX');
                 return data.answer;
             } else {
-                console.warn('[AI API] Invalid response structure, using fallback');
                 return generateFallbackResponse(question);
             }
         })
         .catch(error => {
-            console.warn('[AI REST API] Request failed, trying AJAX fallback:', error);
             return callAIAPI_AJAX(question, titleText, contentText);
         });
     }
-    
-    // AJAX Fallback
+        // AJAX Fallback
     function callAIAPI_AJAX(question, titleText, contentText) {
-        console.log('🔄 Trying AJAX fallback');
-        
         const ajaxUrl = (window.ajaxSettings && window.ajaxSettings.ajaxurl) || window.ajaxurl || '/wp-admin/admin-ajax.php';
         const nonce = window.wpApiSettings && window.wpApiSettings.nonce ? window.wpApiSettings.nonce : '';
-        
-        console.log('🔍 AJAX URL:', ajaxUrl);
-        console.log('🔐 AJAX Nonce:', nonce ? 'EXISTS' : 'MISSING ❌');
         
         const formData = new FormData();
         formData.append('action', 'gi_ai_chat');
@@ -2905,18 +2302,11 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             method: 'POST',
             body: formData
         })
-        .then(response => {
-            console.log('📡 AJAX Response status:', response.status);
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('📦 AJAX Response data:', data);
             if (data.success && data.data && data.data.answer) {
-                console.log('✅ AJAX Response received:', data.data.source);
                 return data.data.answer;
             } else {
-                console.warn('[AI AJAX] Invalid response structure:', data);
-                console.warn('[AI AJAX] Using fallback response');
                 return generateFallbackResponse(question);
             }
         })
@@ -2946,7 +2336,7 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
             return 'この記事の「必要書類」または「提出書類」のセクションをご確認ください。申請に必要な書類のリストが記載されています。';
         }
         
-        return `ご質問ありがとうございます。「${question}」について、この記事内で詳しく説明されています。\n\n記事の目次から該当するセクションをご確認いただくか、ページ内検索（Ctrl+F / Cmd+F）で関連するキーワードを検索してみてください。\n\nさらに詳しい情報が必要な場合は、関連する助成金ページもご参照ください。`;
+        return `ご質問ありがとうございます。「${question}」について、この記事内で詳しく説明されています。\n\n記事の目次から該当するセクションをご確認いただくか、ページ内検索（Ctrl+F / Cmd+F）で関連するキーワードを検索してみてください。\n\nさらに詳しい情報が必要な場合は、関連する補助金ページもご参照ください。`;
     }
     
     // HTML escape
@@ -3040,21 +2430,150 @@ if (!empty($acf_related_grants) && is_array($acf_related_grants)) {
         });
     }
     
+    // ビューカウント更新
+    function updateViewCount() {
+        const postId = document.querySelector('article[id^="post-"]');
+        if (!postId) return;
+        
+        const id = postId.id.replace('post-', '');
+        
+        // REST API経由で更新
+        const apiUrl = window.wpApiSettings ? window.wpApiSettings.root + 'gi-api/v1/column/' + id + '/view' : '/wp-json/gi-api/v1/column/' + id + '/view';
+        const nonce = window.wpApiSettings && window.wpApiSettings.nonce ? window.wpApiSettings.nonce : '';
+        
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': nonce
+            }
+        }).catch(error => {
+            // エラーは無視（閲覧数更新は必須ではない）
+            console.log('[View Count] Update failed (non-critical):', error);
+        });
+    }
+    
+    // スムーススクロール
+    function initSmoothScroll() {
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href === '#') return;
+                
+                const target = document.querySelector(href);
+                if (target) {
+                    e.preventDefault();
+                    const headerOffset = 100;
+                    const elementPosition = target.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                    
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                    
+                    // フォーカスを移動（アクセシビリティ）
+                    target.setAttribute('tabindex', '-1');
+                    target.focus();
+                }
+            });
+        });
+    }
+    
+    // 画像の遅延読み込み
+    function initLazyLoading() {
+        if ('loading' in HTMLImageElement.prototype) {
+            const images = document.querySelectorAll('img[loading="lazy"]');
+            images.forEach(img => {
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                }
+            });
+        } else {
+            // Intersection Observer fallback
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        if (img.dataset.src) {
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                        }
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                imageObserver.observe(img);
+            });
+        }
+    }
+    
+    // 外部リンクに rel="noopener noreferrer" を追加
+    function secureExternalLinks() {
+        const links = document.querySelectorAll('a[href^="http"]');
+        links.forEach(link => {
+            if (link.hostname !== window.location.hostname) {
+                if (!link.hasAttribute('rel')) {
+                    link.setAttribute('rel', 'noopener noreferrer');
+                } else {
+                    const rel = link.getAttribute('rel');
+                    if (!rel.includes('noopener')) {
+                        link.setAttribute('rel', rel + ' noopener');
+                    }
+                    if (!rel.includes('noreferrer')) {
+                        link.setAttribute('rel', link.getAttribute('rel') + ' noreferrer');
+                    }
+                }
+                
+                // 外部リンクアイコンを追加（オプション）
+                if (!link.querySelector('.external-link-icon')) {
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-external-link-alt external-link-icon';
+                    icon.style.marginLeft = '4px';
+                    icon.style.fontSize = '0.85em';
+                    icon.setAttribute('aria-hidden', 'true');
+                    link.appendChild(icon);
+                }
+            }
+        });
+    }
+    
     // 初期化
     function init() {
         generateTOC();
-        initDesktopAI();
         initMobileAI();
         initMobilePanel();
+        updateViewCount();
+        initSmoothScroll();
+        initLazyLoading();
+        secureExternalLinks();
         
-        console.log('[OK] Single Column v4.0 - SEO Enhanced + Wide Sticky Sidebar initialized');
+        console.log('[✓] Single Column v5.1 - SEO Enhanced & Accessibility initialized');
+        console.log('[✓] Features: TOC, Mobile AI, View Count, Smooth Scroll, Lazy Loading, Secure Links');
     }
     
+    // DOMContentLoaded
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
+    
+    // ページ表示時のパフォーマンス測定（開発用）
+    window.addEventListener('load', function() {
+        if (window.performance && window.performance.timing) {
+            const perfData = window.performance.timing;
+            const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+            const connectTime = perfData.responseEnd - perfData.requestStart;
+            const renderTime = perfData.domComplete - perfData.domLoading;
+            
+            console.log('[Performance] Page Load Time:', pageLoadTime + 'ms');
+            console.log('[Performance] Connect Time:', connectTime + 'ms');
+            console.log('[Performance] Render Time:', renderTime + 'ms');
+        }
+    });
     
 })();
 </script>
